@@ -65,6 +65,20 @@ export default function SceneEditPage() {
   const [newDialogueText, setNewDialogueText] = useState('');
   const [selectedCharacterId, setSelectedCharacterId] = useState('');
 
+  // 대사 추가 모달 상태
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newDialogue, setNewDialogue] = useState({
+    characterId: '',
+    text: '',
+    intent: '',
+    honorific: 'banmal',
+    emotion: ''
+  });
+
+  // 시나리오 버전 관리 상태
+  const [versions, setVersions] = useState<any[]>([]);
+  const [showVersions, setShowVersions] = useState(false);
+
   useEffect(() => {
     if (sceneId) {
       fetchSceneData();
@@ -184,6 +198,141 @@ export default function SceneEditPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  // 대사 추가
+  const handleAddDialogue = async () => {
+    if (!newDialogue.characterId || !newDialogue.text) {
+      alert('캐릭터와 대사를 입력해주세요.');
+      return;
+    }
+
+    try {
+      const character = participants.find(p => p.characterId === newDialogue.characterId);
+      if (!character) return;
+
+      const response = await fetch(`${API}/dialogue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sceneId: Number(sceneId),
+          characterId: character.id,
+          text: newDialogue.text,
+          dialogueOrder: dialogues.length + 1,
+          intent: newDialogue.intent,
+          honorific: newDialogue.honorific,
+          emotion: newDialogue.emotion,
+        }),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      // 성공 시 대사 목록 새로고침
+      await fetchDialogues();
+      setShowAddModal(false);
+      setNewDialogue({
+        characterId: '',
+        text: '',
+        intent: '',
+        honorific: 'banmal',
+        emotion: ''
+      });
+    } catch (err: any) {
+      setError(`대사 추가 실패: ${err.message}`);
+    }
+  };
+
+  // 대사 수정
+  const handleUpdateDialogue = async (dialogueId: number, updates: any) => {
+    try {
+      const response = await fetch(`${API}/dialogue/${dialogueId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      // 성공 시 대사 목록 새로고침
+      await fetchDialogues();
+      setEditingDialogue(null);
+    } catch (err: any) {
+      setError(`대사 수정 실패: ${err.message}`);
+    }
+  };
+
+  // 대사 삭제
+  const handleDeleteDialogue = async (dialogueId: number) => {
+    if (!confirm('정말 이 대사를 삭제하시겠습니까?')) return;
+
+    try {
+      const response = await fetch(`${API}/dialogue/${dialogueId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      // 성공 시 대사 목록 새로고침
+      await fetchDialogues();
+    } catch (err: any) {
+      setError(`대사 삭제 실패: ${err.message}`);
+    }
+  };
+
+  // 시나리오 버전 저장
+  const handleSaveVersion = async () => {
+    const title = prompt('버전 이름을 입력하세요:', `버전 ${new Date().toLocaleString()}`);
+    if (!title) return;
+
+    try {
+      const content = JSON.stringify({
+        dialogues: dialogues,
+        generatedDialogues: generatedDialogues,
+      });
+
+      const response = await fetch(`${API}/scenes/${sceneId}/scenarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content }),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      alert('시나리오 버전이 저장되었습니다.');
+      await fetchVersions();
+    } catch (err: any) {
+      setError(`버전 저장 실패: ${err.message}`);
+    }
+  };
+
+  // 버전 목록 조회
+  const fetchVersions = async () => {
+    try {
+      const response = await fetch(`${API}/scenes/${sceneId}/scenarios`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      setVersions(data);
+    } catch (err: any) {
+      console.error('Failed to fetch versions:', err);
+    }
+  };
+
+  // 버전 불러오기
+  const handleLoadVersion = async (versionId: number) => {
+    try {
+      const response = await fetch(`${API}/scenes/scenarios/${versionId}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const version = await response.json();
+
+      const content = JSON.parse(version.content);
+      if (content.dialogues) setDialogues(content.dialogues);
+      if (content.generatedDialogues) setGeneratedDialogues(content.generatedDialogues);
+
+      alert('버전이 불러와졌습니다.');
+      setShowVersions(false);
+    } catch (err: any) {
+      setError(`버전 불러오기 실패: ${err.message}`);
+    }
   };
 
   if (loading) {
@@ -340,38 +489,141 @@ export default function SceneEditPage() {
         )}
 
         {/* Existing Dialogues */}
-        {dialogues.length > 0 && (
-          <Card title="기존 대사" className="mb-6">
+        <Card title="기존 대사" className="mb-6">
+          <div className="mb-4">
+            <Button onClick={() => setShowAddModal(true)} variant="success">
+              + 대사 추가
+            </Button>
+          </div>
+          {dialogues.length > 0 ? (
             <div className="space-y-3">
               {dialogues.map((dialogue) => (
                 <div
                   key={dialogue.id}
                   className="p-4 bg-blue-50 border border-blue-200 rounded-lg"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-                      {dialogue.dialogueOrder}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-800 mb-1">
-                        {dialogue.character.name}
+                  {editingDialogue?.id === dialogue.id ? (
+                    <div>
+                      <textarea
+                        value={newDialogueText}
+                        onChange={(e) => setNewDialogueText(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg"
+                        rows={3}
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          onClick={() => handleUpdateDialogue(dialogue.id, { text: newDialogueText })}
+                          variant="success"
+                        >
+                          저장
+                        </Button>
+                        <Button onClick={() => setEditingDialogue(null)} variant="secondary">
+                          취소
+                        </Button>
                       </div>
-                      <p className="text-gray-700">{dialogue.text}</p>
-                      {dialogue.intent && (
-                        <div className="mt-2 text-xs text-gray-500">
-                          의도: {dialogue.intent} | 어투: {dialogue.honorific}
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex items-start gap-3">
+                      <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                        {dialogue.dialogueOrder}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-800 mb-1">
+                          {dialogue.character.name}
+                        </div>
+                        <p className="text-gray-700">{dialogue.text}</p>
+                        {dialogue.intent && (
+                          <div className="mt-2 text-xs text-gray-500">
+                            의도: {dialogue.intent} | 어투: {dialogue.honorific}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingDialogue(dialogue);
+                            setNewDialogueText(dialogue.text);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDialogue(dialogue.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-          </Card>
+          ) : (
+            <p className="text-gray-500 text-center py-8">
+              아직 대사가 없습니다. '대사 추가' 버튼을 눌러 시작하세요.
+            </p>
+          )}
+        </Card>
+
+        {/* 대사 추가 모달 */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-xl font-bold mb-4">대사 추가</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-2 text-sm font-semibold">캐릭터</label>
+                  <select
+                    value={newDialogue.characterId}
+                    onChange={(e) => setNewDialogue({ ...newDialogue, characterId: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="">선택하세요</option>
+                    {participants.map((p) => (
+                      <option key={p.characterId} value={p.characterId}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-2 text-sm font-semibold">대사</label>
+                  <textarea
+                    value={newDialogue.text}
+                    onChange={(e) => setNewDialogue({ ...newDialogue, text: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    rows={4}
+                    placeholder="대사 내용을 입력하세요"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-2 text-sm font-semibold">어투</label>
+                  <select
+                    value={newDialogue.honorific}
+                    onChange={(e) => setNewDialogue({ ...newDialogue, honorific: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="banmal">반말</option>
+                    <option value="jondae">존댓말</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button onClick={handleAddDialogue} variant="success" className="flex-1">
+                    추가
+                  </Button>
+                  <Button onClick={() => setShowAddModal(false)} variant="secondary" className="flex-1">
+                    취소
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Export Actions */}
-        <Card title="내보내기" className="mb-6">
+        <Card title="내보내기 및 버전 관리" className="mb-6">
           <div className="flex flex-wrap gap-3">
             <Button onClick={handleExportText} variant="secondary">
               📄 텍스트 파일로 내보내기
@@ -379,11 +631,64 @@ export default function SceneEditPage() {
             <Button onClick={handleExportJSON} variant="secondary">
               📦 JSON 파일로 내보내기
             </Button>
+            <Button onClick={handleSaveVersion} variant="primary">
+              💾 현재 버전 저장
+            </Button>
+            <Button onClick={() => { fetchVersions(); setShowVersions(true); }} variant="secondary">
+              🕐 저장된 버전 보기
+            </Button>
           </div>
           <p className="text-sm text-gray-500 mt-3">
-            현재 표시된 기존 대사와 생성된 대사를 파일로 내보낼 수 있습니다.
+            현재 표시된 기존 대사와 생성된 대사를 파일로 내보내거나 버전으로 저장할 수 있습니다.
           </p>
         </Card>
+
+        {/* 버전 관리 모달 */}
+        {showVersions && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">저장된 버전 목록</h3>
+                <button
+                  onClick={() => setShowVersions(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              {versions.length > 0 ? (
+                <div className="space-y-3">
+                  {versions.map((version) => (
+                    <div
+                      key={version.id}
+                      className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-800">{version.title}</h4>
+                          <p className="text-sm text-gray-500 mt-1">
+                            버전 {version.version} | {new Date(version.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => handleLoadVersion(version.id)}
+                          variant="primary"
+                          className="ml-4"
+                        >
+                          불러오기
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">
+                  저장된 버전이 없습니다.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
