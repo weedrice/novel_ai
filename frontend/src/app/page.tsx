@@ -9,6 +9,8 @@ export default function Home() {
   const [candidates, setCandidates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [provider, setProvider] = useState<string>('openai');
+  const [availableProviders, setAvailableProviders] = useState<any>(null);
 
   const fetchEpisodes = async () => {
     setLoading(true);
@@ -39,6 +41,7 @@ export default function Home() {
           honorific: 'banmal',
           maxLen: 80,
           nCandidates: 3,
+          provider: provider,  // LLM 프로바이더 전달
         }),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -106,6 +109,33 @@ export default function Home() {
 
       <section style={{ marginBottom: 30 }}>
         <h2>대사 제안</h2>
+
+        <div style={{ marginBottom: 15 }}>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            LLM 프로바이더 선택
+          </label>
+          <select
+            value={provider}
+            onChange={(e) => setProvider(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              fontSize: 16,
+              borderRadius: 5,
+              border: '1px solid #ccc',
+              backgroundColor: 'white',
+              cursor: 'pointer',
+              minWidth: 200,
+            }}
+          >
+            <option value="openai">OpenAI GPT</option>
+            <option value="claude">Anthropic Claude</option>
+            <option value="gemini">Google Gemini</option>
+          </select>
+          <p style={{ fontSize: 12, color: '#888', marginTop: 5 }}>
+            선택한 LLM: {provider === 'openai' ? 'OpenAI GPT' : provider === 'claude' ? 'Anthropic Claude' : 'Google Gemini'}
+          </p>
+        </div>
+
         <button
           onClick={fetchSuggestions}
           disabled={loading}
