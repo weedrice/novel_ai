@@ -11,6 +11,7 @@ public record SuggestRequest(
     @NotBlank String intent,
     @NotBlank String honorific,
     Integer maxLen,
-    Integer nCandidates
+    Integer nCandidates,
+    String provider  // LLM 프로바이더 선택 (openai, claude, gemini)
 ) {
 }
