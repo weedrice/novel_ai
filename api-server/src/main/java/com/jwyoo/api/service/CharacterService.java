@@ -53,4 +53,16 @@ public class CharacterService {
     public void deleteCharacter(Long id) {
         characterRepository.deleteById(id);
     }
+
+    @Transactional
+    public Character updateSpeakingProfile(Long id, Character profileUpdate) {
+        Character existing = getCharacterById(id);
+        existing.setSpeakingStyle(profileUpdate.getSpeakingStyle());
+        existing.setVocabulary(profileUpdate.getVocabulary());
+        existing.setToneKeywords(profileUpdate.getToneKeywords());
+        existing.setExamples(profileUpdate.getExamples());
+        existing.setProhibitedWords(profileUpdate.getProhibitedWords());
+        existing.setSentencePatterns(profileUpdate.getSentencePatterns());
+        return characterRepository.save(existing);
+    }
 }

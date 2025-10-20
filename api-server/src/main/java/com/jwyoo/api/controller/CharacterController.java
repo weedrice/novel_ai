@@ -1,6 +1,7 @@
 package com.jwyoo.api.controller;
 
 import com.jwyoo.api.dto.CharacterDto;
+import com.jwyoo.api.dto.SpeakingProfileDto;
 import com.jwyoo.api.entity.Character;
 import com.jwyoo.api.service.CharacterService;
 import jakarta.validation.Valid;
@@ -47,5 +48,30 @@ public class CharacterController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCharacter(@PathVariable Long id) {
         characterService.deleteCharacter(id);
+    }
+
+    /**
+     * 말투 프로필 조회
+     */
+    @GetMapping("/{id}/speaking-profile")
+    public SpeakingProfileDto getSpeakingProfile(@PathVariable Long id) {
+        Character character = characterService.getCharacterById(id);
+        return SpeakingProfileDto.fromEntity(character);
+    }
+
+    /**
+     * 말투 프로필 업데이트
+     */
+    @PutMapping("/{id}/speaking-profile")
+    public SpeakingProfileDto updateSpeakingProfile(
+        @PathVariable Long id,
+        @RequestBody @Valid SpeakingProfileDto profileDto
+    ) {
+        // DTO를 임시 Character 객체로 변환하여 서비스 호출
+        Character tempCharacter = new Character();
+        profileDto.applyToEntity(tempCharacter);
+
+        Character updated = characterService.updateSpeakingProfile(id, tempCharacter);
+        return SpeakingProfileDto.fromEntity(updated);
     }
 }

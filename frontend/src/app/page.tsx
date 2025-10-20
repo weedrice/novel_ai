@@ -59,7 +59,7 @@ export default function Home() {
       <h1>등장인물 대사 톤 보조 시스템</h1>
       <p style={{ color: '#666' }}>Character Dialogue Tone Assistant System</p>
 
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 20, display: 'flex', gap: 10 }}>
         <a
           href="/graph"
           style={{
@@ -74,6 +74,21 @@ export default function Home() {
           }}
         >
           캐릭터 관계 그래프 보기
+        </a>
+        <a
+          href="/characters"
+          style={{
+            padding: '10px 20px',
+            fontSize: 16,
+            backgroundColor: '#f59e0b',
+            color: 'white',
+            border: 'none',
+            borderRadius: 5,
+            textDecoration: 'none',
+            display: 'inline-block',
+          }}
+        >
+          캐릭터 말투 프로필 관리
         </a>
       </div>
 
