@@ -1,9 +1,39 @@
 -- 캐릭터 데이터
-INSERT INTO characters (character_id, name, description, personality, speaking_style, vocabulary, tone_keywords, created_at, updated_at)
+INSERT INTO characters (character_id, name, description, personality, speaking_style, vocabulary, tone_keywords, examples, prohibited_words, sentence_patterns, created_at, updated_at)
 VALUES
-    ('char.seha', '세하', '주인공. 밝고 긍정적인 성격', '외향적, 낙천적', '반말, 친근한 어투', '대박,진짜,ㅋㅋ', '밝음,경쾌함', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('char.jiho', '지호', '세하의 친구. 냉정하고 이성적', '내향적, 논리적', '존댓말 섞인 반말', '그러니까,사실', '차분함,신중함', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('char.mina', '미나', '밝고 활발한 후배', '외향적, 사교적', '밝은 반말, 애교', '헐,완전,진짜루', '귀여움,활발함', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+    ('char.seha', '세하', '주인공. 밝고 긍정적인 성격', '외향적, 낙천적', '반말, 친근한 어투', '대박,진짜,ㅋㅋ', '밝음,경쾌함',
+     '안녕? 나 세하야!
+오늘 날씨 진짜 좋다!
+대박! 이거 완전 재밌는데?
+ㅋㅋ 그러게! 나도 그렇게 생각해.',
+     '~요,~습니다,~네요',
+     '~야!
+~지 뭐!
+대박 ~!
+완전 ~!',
+     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('char.jiho', '지호', '세하의 친구. 냉정하고 이성적', '내향적, 논리적', '존댓말 섞인 반말', '그러니까,사실', '차분함,신중함',
+     '어, 안녕... 지호라고 해.
+그러니까, 내 말은 그게 아니라...
+사실 그건 좀 다르게 봐야 할 것 같아.
+아니, 논리적으로 생각해봐.',
+     'ㅋㅋ,대박,헐',
+     '그러니까 ~
+사실은 ~
+~라고 생각해
+논리적으로 ~',
+     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('char.mina', '미나', '밝고 활발한 후배', '외향적, 사교적', '밝은 반말, 애교', '헐,완전,진짜루', '귀여움,활발함',
+     '헐! 선배님~ 오랜만이에요!
+완전 좋아요! 진짜루!
+어머 대박! 그거 재밌겠다~
+히히, 알았어요 선배!',
+     '그러니까,논리적',
+     '헐 ~!
+완전 ~!
+~네요~
+히히, ~',
+     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- 에피소드 데이터
 INSERT INTO episodes (title, description, episode_order, created_at, updated_at)

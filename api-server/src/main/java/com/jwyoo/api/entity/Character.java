@@ -41,6 +41,15 @@ public class Character {
     @Column(length = 1000)
     private String toneKeywords; // 말투 키워드 (쉼표로 구분)
 
+    @Column(columnDefinition = "TEXT")
+    private String examples; // 실제 대사 예시 (줄바꿈으로 구분, Few-shot 학습용)
+
+    @Column(length = 1000)
+    private String prohibitedWords; // 사용하지 않는 단어 목록 (쉼표로 구분)
+
+    @Column(columnDefinition = "TEXT")
+    private String sentencePatterns; // 문장 패턴 예시 (줄바꿈으로 구분)
+
     @OneToMany(mappedBy = "character", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Dialogue> dialogues = new ArrayList<>();
