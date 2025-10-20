@@ -98,4 +98,23 @@ public class LlmClient {
             );
         }
     }
+
+    public Map<String, Object> generateScenario(Map<String, Object> payload) {
+        try {
+            return getRestClient().post()
+                    .uri(llmBaseUrl + "/gen/scenario")
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .body(Map.class);
+        } catch (Exception e) {
+            log.error("Failed to call LLM server (scenario): {}", e.getMessage(), e);
+            return Map.of(
+                    "dialogues", List.of(
+                            Map.of("speaker", "A", "characterId", "unknown", "text", "Scenario fallback line 1", "order", 1),
+                            Map.of("speaker", "B", "characterId", "unknown", "text", "Scenario fallback line 2", "order", 2)
+                    )
+            );
+        }
+    }
 }

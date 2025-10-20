@@ -1,4 +1,4 @@
-package com.jwyoo.api.controller;
+﻿package com.jwyoo.api.controller;
 
 import com.jwyoo.api.entity.Character;
 import com.jwyoo.api.entity.Dialogue;
@@ -17,9 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * 장면 관련 REST API 컨트롤러
- */
 @Slf4j
 @RestController
 @RequestMapping("/scenes")
@@ -31,125 +28,77 @@ public class SceneController {
     private final LlmClient llmClient;
     private final ScenarioVersionService scenarioVersionService;
 
-    /**
-     * 모든 장면 조회
-     */
     @GetMapping
     public ResponseEntity<List<Scene>> getAllScenes() {
         log.info("GET /scenes - Fetching all scenes");
-        List<Scene> scenes = sceneService.getAllScenes();
-        return ResponseEntity.ok(scenes);
+        return ResponseEntity.ok(sceneService.getAllScenes());
     }
 
-    /**
-     * 특정 장면 조회
-     */
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getScene(@PathVariable Long id) {
         log.info("GET /scenes/{} - Fetching scene", id);
         Scene scene = sceneService.getSceneById(id);
         List<Character> participants = sceneService.getParticipants(scene);
-
         Map<String, Object> response = new HashMap<>();
         response.put("scene", scene);
         response.put("participants", participants);
-
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 에피소드별 장면 목록 조회
-     */
     @GetMapping("/episode/{episodeId}")
     public ResponseEntity<List<Scene>> getScenesByEpisode(@PathVariable Long episodeId) {
         log.info("GET /scenes/episode/{} - Fetching scenes by episode", episodeId);
-        List<Scene> scenes = sceneService.getScenesByEpisodeId(episodeId);
-        return ResponseEntity.ok(scenes);
+        return ResponseEntity.ok(sceneService.getScenesByEpisodeId(episodeId));
     }
 
-    /**
-     * 장면의 대사 목록 조회
-     */
     @GetMapping("/{id}/dialogues")
     public ResponseEntity<List<Dialogue>> getDialogues(@PathVariable Long id) {
         log.info("GET /scenes/{}/dialogues - Fetching dialogues", id);
-        List<Dialogue> dialogues = sceneService.getDialogues(id);
-        return ResponseEntity.ok(dialogues);
+        return ResponseEntity.ok(sceneService.getDialogues(id));
     }
 
-    /**
-     * 장면의 시나리오 자동 생성
-     */
     @PostMapping("/{id}/generate-scenario")
     public ResponseEntity<Map<String, Object>> generateScenario(
             @PathVariable Long id,
             @RequestParam(required = false, defaultValue = "openai") String provider,
             @RequestParam(required = false, defaultValue = "5") int dialogueCount
     ) {
-        log.info("POST /scenes/{}/generate-scenario - Generating scenario with provider: {}", id, provider);
-
+        log.info("POST /scenes/{}/generate-scenario - provider: {}", id, provider);
         Scene scene = sceneService.getSceneById(id);
         List<Character> participants = sceneService.getParticipants(scene);
-
         if (participants.isEmpty()) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "장면에 참여하는 캐릭터가 없습니다.");
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body(Map.of("error", "Scene has no participants."));
         }
 
-        // LLM 서버에 시나리오 생성 요청
         Map<String, Object> request = new HashMap<>();
         request.put("sceneDescription", scene.getDescription());
         request.put("location", scene.getLocation());
         request.put("mood", scene.getMood());
-        request.put("participants", participants.stream()
-                .map(c -> Map.of(
-                        "characterId", c.getCharacterId(),
-                        "name", c.getName(),
-                        "personality", c.getPersonality() != null ? c.getPersonality() : "",
-                        "speakingStyle", c.getSpeakingStyle() != null ? c.getSpeakingStyle() : ""
-                ))
-                .collect(Collectors.toList()));
+        request.put("participants", participants.stream().map(c -> Map.of(
+                "characterId", c.getCharacterId(),
+                "name", c.getName(),
+                "personality", c.getPersonality() != null ? c.getPersonality() : "",
+                "speakingStyle", c.getSpeakingStyle() != null ? c.getSpeakingStyle() : ""
+        )).collect(Collectors.toList()));
         request.put("dialogueCount", dialogueCount);
         request.put("provider", provider);
 
-        // TODO: LLM 서버에 시나리오 생성 요청 구현
-        // 현재는 더미 응답 반환
-        Map<String, Object> response = new HashMap<>();
-        response.put("sceneId", id);
-        response.put("generatedDialogues", List.of(
-                Map.of("speaker", participants.get(0).getName(), "text", "이 대사는 LLM으로 생성될 예정입니다.", "order", 1),
-                Map.of("speaker", participants.size() > 1 ? participants.get(1).getName() : participants.get(0).getName(),
-                       "text", "네, 맞아요! 곧 구현될 거예요.", "order", 2)
-        ));
-        response.put("message", "시나리오 생성 기능은 LLM 서버 엔드포인트 구현 후 활성화됩니다.");
-
-        return ResponseEntity.ok(response);
+        Map<String, Object> llmResponse = llmClient.generateScenario(request);
+        return ResponseEntity.ok(llmResponse);
     }
 
-    /**
-     * 장면 생성
-     */
     @PostMapping
     public ResponseEntity<Scene> createScene(@RequestBody Scene scene) {
         log.info("POST /scenes - Creating new scene");
-        Scene created = sceneService.createScene(scene);
-        return ResponseEntity.ok(created);
+        return ResponseEntity.ok(sceneService.createScene(scene));
     }
 
-    /**
-     * 장면 수정
-     */
     @PutMapping("/{id}")
     public ResponseEntity<Scene> updateScene(@PathVariable Long id, @RequestBody Scene scene) {
         log.info("PUT /scenes/{} - Updating scene", id);
-        Scene updated = sceneService.updateScene(id, scene);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(sceneService.updateScene(id, scene));
     }
 
-    /**
-     * 장면 삭제
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteScene(@PathVariable Long id) {
         log.info("DELETE /scenes/{} - Deleting scene", id);
@@ -157,11 +106,6 @@ public class SceneController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== 시나리오 버전 관리 API ====================
-
-    /**
-     * 시나리오 버전 저장
-     */
     @PostMapping("/{sceneId}/scenarios")
     public ResponseEntity<ScenarioVersion> saveScenarioVersion(
             @PathVariable Long sceneId,
@@ -171,34 +115,21 @@ public class SceneController {
         String title = request.getOrDefault("title", "버전 " + System.currentTimeMillis());
         String content = request.get("content");
         String createdBy = request.getOrDefault("createdBy", "anonymous");
-
-        ScenarioVersion saved = scenarioVersionService.saveVersion(sceneId, title, content, createdBy);
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(scenarioVersionService.saveVersion(sceneId, title, content, createdBy));
     }
 
-    /**
-     * 특정 장면의 모든 버전 조회
-     */
     @GetMapping("/{sceneId}/scenarios")
     public ResponseEntity<List<ScenarioVersion>> getScenarioVersions(@PathVariable Long sceneId) {
         log.info("GET /scenes/{}/scenarios - Fetching scenario versions", sceneId);
-        List<ScenarioVersion> versions = scenarioVersionService.getVersionsBySceneId(sceneId);
-        return ResponseEntity.ok(versions);
+        return ResponseEntity.ok(scenarioVersionService.getVersionsBySceneId(sceneId));
     }
 
-    /**
-     * 특정 버전 조회
-     */
     @GetMapping("/scenarios/{versionId}")
     public ResponseEntity<ScenarioVersion> getScenarioVersion(@PathVariable Long versionId) {
         log.info("GET /scenarios/{} - Fetching scenario version", versionId);
-        ScenarioVersion version = scenarioVersionService.getVersionById(versionId);
-        return ResponseEntity.ok(version);
+        return ResponseEntity.ok(scenarioVersionService.getVersionById(versionId));
     }
 
-    /**
-     * 버전 삭제
-     */
     @DeleteMapping("/scenarios/{versionId}")
     public ResponseEntity<Void> deleteScenarioVersion(@PathVariable Long versionId) {
         log.info("DELETE /scenarios/{} - Deleting scenario version", versionId);
