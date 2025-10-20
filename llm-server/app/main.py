@@ -230,6 +230,178 @@ def _generate_fallback_response(inp: SuggestInput) -> SuggestResponse:
     return SuggestResponse(candidates=candidates)
 
 
+class ParticipantInfo(BaseModel):
+    """시나리오 생성 시 참여 캐릭터 정보"""
+    characterId: str
+    name: str
+    personality: str = ""
+    speakingStyle: str = ""
+
+
+class ScenarioInput(BaseModel):
+    """시나리오 생성 요청 모델"""
+    sceneDescription: str = Field(..., description="장면 설명")
+    location: Optional[str] = Field(None, description="장소")
+    mood: Optional[str] = Field(None, description="분위기")
+    participants: List[ParticipantInfo] = Field(..., description="참여 캐릭터 목록")
+    dialogueCount: int = Field(5, description="생성할 대사 수")
+    provider: str = Field("openai", description="LLM 프로바이더")
+
+
+class DialogueItem(BaseModel):
+    """생성된 대사 항목"""
+    speaker: str
+    characterId: str
+    text: str
+    order: int
+
+
+class ScenarioResponse(BaseModel):
+    """시나리오 생성 응답 모델"""
+    dialogues: List[DialogueItem]
+
+
+@app.post("/gen/scenario", response_model=ScenarioResponse)
+async def gen_scenario(inp: ScenarioInput) -> ScenarioResponse:
+    """
+    장면 시나리오 생성 API
+    여러 캐릭터가 참여하는 대화 흐름을 자연스럽게 생성합니다.
+    """
+    logger.info(f"Generating scenario with {len(inp.participants)} participants, {inp.dialogueCount} dialogues")
+
+    if len(inp.participants) < 2:
+        logger.warning("Not enough participants for scenario generation")
+        # 최소 1명이라도 있으면 독백 형식으로 생성
+        pass
+
+    try:
+        # 시나리오 프롬프트 생성
+        system_prompt = _build_scenario_system_prompt(inp)
+        user_prompt = _build_scenario_user_prompt(inp)
+
+        logger.info(f"System prompt length: {len(system_prompt)} chars")
+        logger.info(f"User prompt length: {len(user_prompt)} chars")
+
+        # LLM 호출
+        generated_texts = llm_service.generate_dialogue(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=500,
+            temperature=0.8,
+            n_candidates=1,
+            provider=inp.provider
+        )
+
+        # 생성된 텍스트를 대사 목록으로 파싱
+        dialogues = _parse_scenario_dialogues(generated_texts[0] if generated_texts else "", inp.participants)
+
+        if not dialogues:
+            logger.warning("No dialogues generated, using fallback")
+            dialogues = _generate_fallback_scenario(inp)
+
+        return ScenarioResponse(dialogues=dialogues[:inp.dialogueCount])
+
+    except Exception as e:
+        logger.error(f"Error generating scenario: {e}")
+        dialogues = _generate_fallback_scenario(inp)
+        return ScenarioResponse(dialogues=dialogues[:inp.dialogueCount])
+
+
+def _build_scenario_system_prompt(inp: ScenarioInput) -> str:
+    """시나리오 생성용 시스템 프롬프트 생성"""
+    participants_desc = "\n".join([
+        f"- {p.name} ({p.characterId}): {p.personality}, 말투: {p.speakingStyle}"
+        for p in inp.participants
+    ])
+
+    prompt = f"""당신은 창작 시나리오 작가입니다. 주어진 장면과 캐릭터 정보를 바탕으로 자연스러운 대화를 생성하세요.
+
+## 장면 정보
+- 장소: {inp.location or '미정'}
+- 분위기: {inp.mood or '일반'}
+- 설명: {inp.sceneDescription}
+
+## 참여 캐릭터
+{participants_desc}
+
+## 생성 규칙
+1. 각 캐릭터의 성격과 말투를 정확히 반영하세요
+2. 대화가 자연스럽게 이어지도록 하세요
+3. 장면의 분위기를 고려하세요
+4. 각 대사는 다음 형식으로 작성하세요:
+   [캐릭터이름]: 대사 내용
+5. 대사만 작성하고, 지문이나 설명은 포함하지 마세요"""
+
+    return prompt
+
+
+def _build_scenario_user_prompt(inp: ScenarioInput) -> str:
+    """시나리오 생성용 사용자 프롬프트 생성"""
+    return f"{inp.dialogueCount}개의 대사로 구성된 짧은 대화를 생성해주세요."
+
+
+def _parse_scenario_dialogues(text: str, participants: List[ParticipantInfo]) -> List[DialogueItem]:
+    """생성된 텍스트를 대사 목록으로 파싱"""
+    dialogues = []
+    lines = text.strip().split('\n')
+
+    # 캐릭터 이름으로 매핑
+    name_to_char = {p.name: p for p in participants}
+
+    order = 1
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('#') or line.startswith('//'):
+            continue
+
+        # [이름]: 대사 또는 이름: 대사 형식 파싱
+        if ':' in line:
+            parts = line.split(':', 1)
+            speaker_part = parts[0].strip().replace('[', '').replace(']', '')
+            text_part = parts[1].strip()
+
+            # 캐릭터 찾기
+            character = None
+            for name, char in name_to_char.items():
+                if name in speaker_part:
+                    character = char
+                    break
+
+            if character and text_part:
+                dialogues.append(DialogueItem(
+                    speaker=character.name,
+                    characterId=character.characterId,
+                    text=text_part,
+                    order=order
+                ))
+                order += 1
+
+    return dialogues
+
+
+def _generate_fallback_scenario(inp: ScenarioInput) -> List[DialogueItem]:
+    """시나리오 생성 실패 시 더미 대사 생성"""
+    dialogues = []
+    templates = [
+        "안녕하세요, 어떻게 지내셨어요?",
+        "잘 지냈어요. 요즘 어떠세요?",
+        "바쁘게 지내고 있어요. 새로운 프로젝트를 시작했거든요.",
+        "오, 그거 흥미롭네요! 어떤 프로젝트인가요?",
+        "자세한 건 나중에 이야기해 드릴게요.",
+    ]
+
+    for i in range(min(inp.dialogueCount, len(templates))):
+        participant = inp.participants[i % len(inp.participants)]
+        dialogues.append(DialogueItem(
+            speaker=participant.name,
+            characterId=participant.characterId,
+            text=templates[i],
+            order=i + 1
+        ))
+
+    return dialogues
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
