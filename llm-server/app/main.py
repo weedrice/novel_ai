@@ -49,6 +49,8 @@ class SuggestInput(BaseModel):
     characterInfo: Optional[CharacterInfo] = Field(None, description="화자 캐릭터 정보")
     targetNames: Optional[List[str]] = Field(None, description="대상 캐릭터 이름 목록")
     context: Optional[str] = Field(None, description="추가 컨텍스트")
+    # LLM 프로바이더 선택
+    provider: Optional[str] = Field(None, description="LLM 프로바이더 (openai, claude, gemini)")
 
 
 class Candidate(BaseModel):
@@ -68,6 +70,38 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/providers")
+def get_providers():
+    """
+    사용 가능한 LLM 프로바이더 목록 조회
+
+    Returns:
+        사용 가능한 프로바이더 목록과 기본 프로바이더 정보
+    """
+    available = llm_service.get_available_providers()
+    return {
+        "available": available,
+        "default": llm_service.default_provider,
+        "providers": {
+            "openai": {
+                "name": "OpenAI GPT",
+                "models": ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"],
+                "available": "openai" in available
+            },
+            "claude": {
+                "name": "Anthropic Claude",
+                "models": ["claude-3-haiku-20240307", "claude-3-sonnet-20240229", "claude-3-opus-20240229"],
+                "available": "claude" in available
+            },
+            "gemini": {
+                "name": "Google Gemini",
+                "models": ["gemini-pro", "gemini-pro-vision"],
+                "available": "gemini" in available
+            }
+        }
+    }
 
 
 @app.post("/gen/suggest", response_model=SuggestResponse)
@@ -104,11 +138,12 @@ def gen_suggest(inp: SuggestInput) -> SuggestResponse:
         logger.info(f"System prompt length: {len(system_prompt)} chars")
         logger.info(f"User prompt length: {len(user_prompt)} chars")
 
-        # LLM으로 대사 생성
+        # LLM으로 대사 생성 (provider 지정)
         generated_dialogues = llm_service.generate_dialogue(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
-            n_candidates=inp.nCandidates
+            n_candidates=inp.nCandidates,
+            provider=inp.provider
         )
 
         logger.info(f"Generated {len(generated_dialogues)} dialogues")
