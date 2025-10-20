@@ -1,665 +1,394 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import ReactFlow, {
-  Node,
-  Edge,
-  Controls,
   Background,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  Connection,
+  Controls,
+  Edge,
   MarkerType,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+  Node,
+  addEdge,
+  useEdgesState,
+  useNodesState,
+  Connection,
+} from 'reactflow'
+import 'reactflow/dist/style.css'
+import ErrorMessage from '@/components/ErrorMessage'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import Button from '@/components/Button'
 
-const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
+
+type GraphNode = {
+  id: string
+  label: string
+}
+
+type GraphEdge = {
+  id: string
+  source: string
+  target: string
+  label?: string
+  closeness?: number
+}
 
 export default function GraphPage() {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedNode, setSelectedNode] = useState<any>(null);
-  const [selectedEdge, setSelectedEdge] = useState<any>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [allCharacters, setAllCharacters] = useState<any[]>([]);
-
-  // 필터링 및 검색 상태
-  const [searchQuery, setSearchQuery] = useState('');
-  const [relationTypeFilter, setRelationTypeFilter] = useState<string>('all');
-  const [availableRelationTypes, setAvailableRelationTypes] = useState<string[]>([]);
-
-  // 관계 추가 폼 상태
-  const [newRelation, setNewRelation] = useState({
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [filter, setFilter] = useState('')
+  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [relationTypes, setRelationTypes] = useState<string[]>([])
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null)
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [showAdd, setShowAdd] = useState(false)
+  const [characters, setCharacters] = useState<{ id: number; name: string }[]>([])
+  const [newRel, setNewRel] = useState({
     fromCharacterId: '',
     toCharacterId: '',
     relationType: 'friend',
-    closeness: 5.0,
+    closeness: 5,
     description: '',
-  });
+  })
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
-
-  const fetchGraphData = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchGraph = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
-      const response = await fetch(`${API}/relationships/graph`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+      const res = await fetch(`${API}/relationships/graph`, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
 
-      // Transform nodes for React Flow
-      const flowNodes: Node[] = data.nodes.map((node: any, index: number) => ({
-        id: node.id,
-        type: 'default',
+      const rawNodes: GraphNode[] = Array.isArray(data?.nodes) ? data.nodes : []
+      const rawEdges: GraphEdge[] = Array.isArray(data?.edges) ? data.edges : []
+
+      const flowNodes: Node[] = rawNodes.map((n, i, arr) => ({
+        id: n.id,
+        data: { label: n.label },
         position: {
-          x: Math.cos((index / data.nodes.length) * 2 * Math.PI) * 350 + 500,
-          y: Math.sin((index / data.nodes.length) * 2 * Math.PI) * 350 + 400,
-        },
-        data: {
-          label: node.label,
-          ...node,
+          x: Math.cos((i / Math.max(arr.length, 1)) * 2 * Math.PI) * 300 + 500,
+          y: Math.sin((i / Math.max(arr.length, 1)) * 2 * Math.PI) * 300 + 400,
         },
         style: {
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          border: '3px solid #5a67d8',
-          borderRadius: '15px',
-          padding: '20px 30px',
-          fontSize: '18px',
-          fontWeight: 'bold',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-          minWidth: '120px',
-          textAlign: 'center',
+          background: 'white',
+          border: '2px solid #4f46e5',
+          color: '#111827',
+          borderRadius: 12,
+          padding: '10px 14px',
+          fontWeight: 600,
         },
-      }));
+      }))
 
-      // Transform edges for React Flow
-      const flowEdges: Edge[] = data.edges.map((edge: any) => {
-        const closeness = edge.closeness || 5;
-        const strokeWidth = Math.max(2, closeness / 2);
-        const color = closeness >= 8 ? '#10b981' : closeness >= 6 ? '#3b82f6' : '#6b7280';
-
+      const flowEdges: Edge[] = rawEdges.map((e) => {
+        const closeness = e.closeness ?? 5
+        const color = closeness >= 8 ? '#10b981' : closeness >= 6 ? '#3b82f6' : '#6b7280'
         return {
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          label: `${edge.label} (${edge.closeness?.toFixed(1) || 'N/A'})`,
-          type: 'default', // 기본 베지어 곡선
-          animated: true,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: color,
-            width: 25,
-            height: 25,
-          },
-          data: edge,
-          style: {
-            stroke: color,
-            strokeWidth: strokeWidth,
-          },
-          labelStyle: {
-            fontSize: '14px',
-            fontWeight: 'bold',
-            fill: color,
-            background: 'white',
-            padding: '5px',
-            borderRadius: '5px',
-          },
-          labelBgStyle: {
-            fill: 'white',
-            fillOpacity: 0.9,
-          },
-        };
-      });
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          label: [e.label, typeof e.closeness === 'number' ? `(${e.closeness.toFixed(1)})` : '']
+            .filter(Boolean)
+            .join(' '),
+          markerEnd: { type: MarkerType.ArrowClosed, color, width: 20, height: 20 },
+          style: { stroke: color, strokeWidth: Math.max(2, closeness / 2) },
+          labelStyle: { fontSize: 12, fontWeight: 600, fill: color },
+          labelBgPadding: [6, 3],
+          labelBgBorderRadius: 6,
+          labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85, stroke: color, strokeOpacity: 0.3 },
+          data: e,
+        }
+      })
 
-      setNodes(flowNodes);
-      setEdges(flowEdges);
-
-      // 관계 유형 목록 추출
-      const types = Array.from(new Set(data.edges.map((edge: any) => edge.label)));
-      setAvailableRelationTypes(types);
-    } catch (err: any) {
-      setError(`그래프 데이터 로드 실패: ${err.message}`);
+      setNodes(flowNodes)
+      setEdges(flowEdges)
+      // 관계 유형 목록 구성
+      const types = Array.from(
+        new Set<string>(rawEdges.map((e) => String(e.label || '')).filter(Boolean))
+      )
+      setRelationTypes(types)
+    } catch (e: any) {
+      setError(`그래프 로드 실패: ${e?.message || e}`)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-
-  // 필터링된 노드와 엣지 계산
-  const filteredNodesAndEdges = useCallback(() => {
-    let filteredNodes = nodes;
-    let filteredEdges = edges;
-
-    // 검색어 필터링
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      const matchingNodeIds = new Set(
-        nodes
-          .filter((node) => node.data.label?.toLowerCase().includes(query))
-          .map((node) => node.id)
-      );
-
-      filteredNodes = nodes.filter((node) => matchingNodeIds.has(node.id));
-      filteredEdges = edges.filter(
-        (edge) => matchingNodeIds.has(edge.source) || matchingNodeIds.has(edge.target)
-      );
-    }
-
-    // 관계 유형 필터링
-    if (relationTypeFilter !== 'all') {
-      filteredEdges = filteredEdges.filter(
-        (edge) => edge.data.label === relationTypeFilter
-      );
-
-      // 필터링된 엣지와 연결된 노드만 표시
-      const connectedNodeIds = new Set<string>();
-      filteredEdges.forEach((edge) => {
-        connectedNodeIds.add(edge.source);
-        connectedNodeIds.add(edge.target);
-      });
-
-      filteredNodes = filteredNodes.filter((node) => connectedNodeIds.has(node.id));
-    }
-
-    return { nodes: filteredNodes, edges: filteredEdges };
-  }, [nodes, edges, searchQuery, relationTypeFilter]);
+  }, [setNodes, setEdges])
 
   useEffect(() => {
-    fetchGraphData();
-    fetchAllCharacters();
-  }, []);
+    fetchGraph()
+    // load characters for add-relationship form
+    ;(async () => {
+      try {
+        const res = await fetch(`${API}/characters`, { cache: 'no-store' })
+        const data = await res.json()
+        setCharacters(
+          (Array.isArray(data) ? data : []).map((c: any) => ({ id: c.id, name: c.name }))
+        )
+      } catch {}
+    })()
+  }, [fetchGraph])
 
-  const fetchAllCharacters = async () => {
-    try {
-      const response = await fetch(`${API}/characters`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      setAllCharacters(data);
-    } catch (err: any) {
-      console.error('Failed to fetch characters:', err);
-    }
-  };
+  const onConnect = useCallback((c: Connection) => setEdges((eds) => addEdge(c, eds)), [setEdges])
 
-  const onNodeClick = useCallback((_: any, node: Node) => {
-    setSelectedNode(node.data);
-    setSelectedEdge(null);
-  }, []);
+  const onNodeClick = useCallback((_: any, n: Node) => {
+    setSelectedNode(n)
+    setSelectedEdge(null)
+  }, [])
 
-  const onEdgeClick = useCallback((_: any, edge: Edge) => {
-    setSelectedEdge(edge.data);
-    setSelectedNode(null);
-  }, []);
+  const onEdgeClick = useCallback((_: any, e: Edge) => {
+    setSelectedEdge(e)
+    setSelectedNode(null)
+  }, [])
 
   const onPaneClick = useCallback(() => {
-    setSelectedNode(null);
-    setSelectedEdge(null);
-  }, []);
+    setSelectedNode(null)
+    setSelectedEdge(null)
+  }, [])
 
-  const handleCreateRelationship = async () => {
-    if (!newRelation.fromCharacterId || !newRelation.toCharacterId) {
-      setError('출발 캐릭터와 도착 캐릭터를 선택해주세요.');
-      return;
+  const filtered = useMemo(() => {
+    // 이름 필터
+    const q = filter.trim().toLowerCase()
+    let keptNodes = nodes
+    let keptEdges = edges
+    if (q) {
+      const keepNode = new Set(
+        nodes.filter((n) => String(n.data?.label || '').toLowerCase().includes(q)).map((n) => n.id),
+      )
+      keptNodes = nodes.filter((n) => keepNode.has(n.id))
+      keptEdges = edges.filter((e) => keepNode.has(e.source) || keepNode.has(e.target))
     }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`${API}/relationships`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fromCharacter: { id: parseInt(newRelation.fromCharacterId) },
-          toCharacter: { id: parseInt(newRelation.toCharacterId) },
-          relationType: newRelation.relationType,
-          closeness: newRelation.closeness,
-          description: newRelation.description,
-        }),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      // 관계 생성 성공 후 그래프 새로고침
-      await fetchGraphData();
-      setShowAddModal(false);
-      setNewRelation({
-        fromCharacterId: '',
-        toCharacterId: '',
-        relationType: 'friend',
-        closeness: 5.0,
-        description: '',
-      });
-    } catch (err: any) {
-      setError(`관계 생성 실패: ${err.message}`);
-    } finally {
-      setLoading(false);
+    // 유형 필터
+    if (typeFilter !== 'all') {
+      keptEdges = keptEdges.filter((e) => String(e.data?.label || e.label || '') === typeFilter)
+      const connected = new Set<string>()
+      keptEdges.forEach((e) => {
+        connected.add(e.source)
+        connected.add(e.target)
+      })
+      keptNodes = keptNodes.filter((n) => connected.has(n.id))
     }
-  };
-
-  const handleDeleteRelationship = async (relationshipId: string) => {
-    if (!confirm('이 관계를 삭제하시겠습니까?')) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`${API}/relationships/${relationshipId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      // 관계 삭제 성공 후 그래프 새로고침
-      await fetchGraphData();
-      setSelectedEdge(null);
-    } catch (err: any) {
-      setError(`관계 삭제 실패: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const { nodes: displayNodes, edges: displayEdges } = filteredNodesAndEdges();
+    return { nodes: keptNodes, edges: keptEdges }
+  }, [filter, typeFilter, nodes, edges])
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100%' }}>
-      {/* 메인 그래프 영역 */}
-      <div style={{ flex: 1, position: 'relative' }}>
-        <div
-          style={{
-            position: 'absolute',
-            top: 20,
-            left: 20,
-            zIndex: 10,
-            background: 'white',
-            padding: '15px',
-            borderRadius: '8px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-            maxWidth: '400px',
-          }}
-        >
-          <h1 style={{ margin: 0, fontSize: '24px', marginBottom: '10px' }}>
-            캐릭터 관계 그래프
-          </h1>
-
-          {/* 검색 및 필터 */}
-          <div style={{ marginBottom: '10px' }}>
-            <input
-              type="text"
-              placeholder="캐릭터 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px',
-                fontSize: '14px',
-                borderRadius: '5px',
-                border: '1px solid #ddd',
-                marginBottom: '8px',
-              }}
-            />
-            <select
-              value={relationTypeFilter}
-              onChange={(e) => setRelationTypeFilter(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px',
-                fontSize: '14px',
-                borderRadius: '5px',
-                border: '1px solid #ddd',
-              }}
-            >
-              <option value="all">모든 관계 유형</option>
-              {availableRelationTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
+    <main className="min-h-screen bg-gray-50 p-6 md:p-10">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-4 flex items-center gap-3">
+          <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/')}>홈으로</Button>
+          <a href="/" className="px-3 py-2 border rounded text-sm">홈으로</a>
+          <h1 className="text-2xl font-bold text-gray-900">관계 그래프</h1>
+          <button
+            className="ml-auto px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md border"
+            onClick={fetchGraph}
+          >
+            새로고침
+          </button>
+          <button
+            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md border"
+            onClick={() => setShowAdd(true)}
+          >
+            관계 추가
+          </button>
+          {selectedEdge && (
             <button
-              onClick={fetchGraphData}
-              disabled={loading}
-              style={{
-                padding: '10px 20px',
-                fontSize: '14px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                backgroundColor: '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
+              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md border"
+              onClick={async () => {
+                try {
+                  const id = String(selectedEdge.id)
+                  await fetch(`${API}/relationships/${id}`, { method: 'DELETE' })
+                  setSelectedEdge(null)
+                  await fetchGraph()
+                } catch (e) {
+                  setError('삭제 실패')
+                }
               }}
             >
-              {loading ? '로딩 중...' : '새로고침'}
+              선택 엣지 삭제
             </button>
-            <button
-              onClick={() => setShowAddModal(true)}
-              disabled={loading}
-              style={{
-                padding: '10px 20px',
-                fontSize: '14px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                backgroundColor: '#10b981',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-              }}
-            >
-              관계 추가
-            </button>
-          </div>
+          )}
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md"
+            placeholder="이름 검색"
+          />
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
+            <option value="all">모든 관계</option>
+            {relationTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
         </div>
 
         {error && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 100,
-              left: 20,
-              zIndex: 10,
-              background: '#fee',
-              color: '#c00',
-              padding: '15px',
-              borderRadius: '8px',
-              maxWidth: '400px',
-            }}
-          >
-            {error}
-          </div>
+          <ErrorMessage message={error} onRetry={fetchGraph} onDismiss={() => setError(null)} />
         )}
 
-        <ReactFlow
-          nodes={displayNodes}
-          edges={displayEdges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          onEdgeClick={onEdgeClick}
-          onPaneClick={onPaneClick}
-          fitView
-        >
-          <Controls />
-          <Background color="#aaa" gap={16} />
-        </ReactFlow>
-      </div>
-
-      {/* 사이드바 - 상세 정보 */}
-      <div
-        style={{
-          width: '350px',
-          background: '#f9f9f9',
-          padding: '20px',
-          overflowY: 'auto',
-          borderLeft: '1px solid #ddd',
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>상세 정보</h2>
-
-        {selectedNode && (
-          <div
-            style={{
-              background: 'white',
-              padding: '15px',
-              borderRadius: '8px',
-              marginBottom: '15px',
-            }}
-          >
-            <h3 style={{ marginTop: 0, color: '#0070f3' }}>
-              캐릭터: {selectedNode.label}
-            </h3>
-            <p>
-              <strong>ID:</strong> {selectedNode.characterId}
-            </p>
-            <p>
-              <strong>설명:</strong> {selectedNode.description || 'N/A'}
-            </p>
-            <p>
-              <strong>성격:</strong> {selectedNode.personality || 'N/A'}
-            </p>
+        {loading ? (
+          <div className="py-20 flex justify-center">
+            <LoadingSpinner size="lg" message="그래프를 불러오는 중..." />
           </div>
-        )}
-
-        {selectedEdge && (
-          <div
-            style={{
-              background: 'white',
-              padding: '15px',
-              borderRadius: '8px',
-              marginBottom: '15px',
-            }}
-          >
-            <h3 style={{ marginTop: 0, color: '#10b981' }}>관계 정보</h3>
-            <p>
-              <strong>관계 유형:</strong> {selectedEdge.label}
-            </p>
-            <p>
-              <strong>친밀도:</strong> {selectedEdge.closeness?.toFixed(1) || 'N/A'}
-            </p>
-            <p>
-              <strong>설명:</strong> {selectedEdge.description || 'N/A'}
-            </p>
-            <button
-              onClick={() => handleDeleteRelationship(selectedEdge.id)}
-              disabled={loading}
-              style={{
-                marginTop: '10px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                backgroundColor: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                width: '100%',
-              }}
+        ) : (
+          <>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div className="lg:col-span-4 lg:order-1" style={{ height: '80vh', background: 'white', borderRadius: 12, overflow: 'hidden' }}>
+              <ReactFlow
+                nodes={filtered.nodes}
+                edges={filtered.edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={onNodeClick}
+                onEdgeClick={onEdgeClick}
+                onPaneClick={onPaneClick}
+                fitView
+              >
+                <Background />
+                <Controls />
+              </ReactFlow>
+            </div>
+            <aside className={`lg:col-span-1 lg:order-2 bg-white rounded-lg shadow p-4 h-[80vh] overflow-auto ${sidebarOpen ? '' : 'hidden lg:block lg:col-span-1'}`}> 
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold">정보 패널</h2>
+                <button className="text-sm px-2 py-1 rounded bg-gray-700 hover:bg-gray-800 text-white" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                  {sidebarOpen ? '접기' : '펴기'}
+                </button>
+              </div>
+              {!selectedNode && !selectedEdge && (
+                <p className="text-sm text-gray-500">노드 또는 엣지를 클릭하면 상세 정보를 표시합니다.</p>
+              )}
+              {selectedNode && (
+                <div>
+                  <h2 className="text-lg font-semibold mb-2">노드 정보</h2>
+                  <div className="text-sm text-gray-700">
+                    <div><strong>ID:</strong> {selectedNode.id}</div>
+                    <div><strong>Label:</strong> {String((selectedNode.data as any)?.label || '')}</div>
+                  </div>
+                </div>
+              )}
+              {selectedEdge && (
+                <div>
+                  <h2 className="text-lg font-semibold mb-2">엣지 정보</h2>
+                  <div className="text-sm text-gray-700 space-y-1">
+                    <div><strong>ID:</strong> {selectedEdge.id}</div>
+                    <div><strong>Source:</strong> {selectedEdge.source}</div>
+                    <div><strong>Target:</strong> {selectedEdge.target}</div>
+                    <div><strong>Label:</strong> {String(selectedEdge.label || '')}</div>
+                    <div><strong>Closeness:</strong> {String((selectedEdge.data as any)?.closeness ?? '')}</div>
+                  </div>
+                </div>
+              )}
+            </aside>
+          </div>
+          {showAdd && (
+            <div
+              className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+              onClick={() => setShowAdd(false)}
             >
-              관계 삭제
-            </button>
-          </div>
+              <div
+                className="bg-white rounded-lg p-5 w-[520px] max-w-[92vw]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 className="text-lg font-semibold mb-4">관계 추가</h2>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm mb-1">출발 캐릭터</label>
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={newRel.fromCharacterId}
+                      onChange={(e) => setNewRel({ ...newRel, fromCharacterId: e.target.value })}
+                    >
+                      <option value="">선택</option>
+                      {characters.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">도착 캐릭터</label>
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={newRel.toCharacterId}
+                      onChange={(e) => setNewRel({ ...newRel, toCharacterId: e.target.value })}
+                    >
+                      <option value="">선택</option>
+                      {characters.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">관계 유형</label>
+                    <input
+                      className="w-full border rounded px-3 py-2"
+                      value={newRel.relationType}
+                      onChange={(e) => setNewRel({ ...newRel, relationType: e.target.value })}
+                      placeholder="e.g. friend, rival, family"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">친밀도: {newRel.closeness}</label>
+                    <input
+                      type="range"
+                      min={0}
+                      max={10}
+                      step={0.1}
+                      className="w-full"
+                      value={newRel.closeness}
+                      onChange={(e) => setNewRel({ ...newRel, closeness: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">설명</label>
+                    <textarea
+                      className="w-full border rounded px-3 py-2"
+                      rows={3}
+                      value={newRel.description}
+                      onChange={(e) => setNewRel({ ...newRel, description: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button className="px-3 py-2 rounded border" onClick={() => setShowAdd(false)}>취소</button>
+                  <button
+                    className="px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+                    onClick={async () => {
+                      if (!newRel.fromCharacterId || !newRel.toCharacterId) return
+                      try {
+                        const body = {
+                          fromCharacter: { id: Number(newRel.fromCharacterId) },
+                          toCharacter: { id: Number(newRel.toCharacterId) },
+                          relationType: newRel.relationType,
+                          closeness: newRel.closeness,
+                          description: newRel.description,
+                        }
+                        await fetch(`${API}/relationships`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(body),
+                        })
+                        setShowAdd(false)
+                        setNewRel({ fromCharacterId: '', toCharacterId: '', relationType: 'friend', closeness: 5, description: '' })
+                        await fetchGraph()
+                      } catch (e) {
+                        setError('관계 추가 실패')
+                      }
+                    }}
+                  >
+                    생성
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
-
-        {!selectedNode && !selectedEdge && (
-          <div style={{ color: '#666', textAlign: 'center', marginTop: '40px' }}>
-            <p>노드나 엣지를 클릭하여</p>
-            <p>상세 정보를 확인하세요</p>
-          </div>
-        )}
-
-        <div style={{ marginTop: '30px', color: '#666', fontSize: '14px' }}>
-          <h4>사용 방법</h4>
-          <ul style={{ paddingLeft: '20px' }}>
-            <li>노드를 드래그하여 위치 조정</li>
-            <li>마우스 휠로 줌 인/아웃</li>
-            <li>노드/엣지 클릭 시 상세 정보 표시</li>
-            <li>배경 클릭 시 선택 해제</li>
-          </ul>
-        </div>
       </div>
-
-      {/* 관계 추가 모달 */}
-      {showAddModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setShowAddModal(false)}
-        >
-          <div
-            style={{
-              background: 'white',
-              padding: '30px',
-              borderRadius: '12px',
-              maxWidth: '500px',
-              width: '90%',
-              maxHeight: '80vh',
-              overflowY: 'auto',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 style={{ marginTop: 0, marginBottom: '20px' }}>새 관계 추가</h2>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                출발 캐릭터
-              </label>
-              <select
-                value={newRelation.fromCharacterId}
-                onChange={(e) =>
-                  setNewRelation({ ...newRelation, fromCharacterId: e.target.value })
-                }
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  fontSize: '14px',
-                  borderRadius: '5px',
-                  border: '1px solid #ddd',
-                }}
-              >
-                <option value="">선택하세요</option>
-                {allCharacters.map((char) => (
-                  <option key={char.id} value={char.id}>
-                    {char.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                도착 캐릭터
-              </label>
-              <select
-                value={newRelation.toCharacterId}
-                onChange={(e) =>
-                  setNewRelation({ ...newRelation, toCharacterId: e.target.value })
-                }
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  fontSize: '14px',
-                  borderRadius: '5px',
-                  border: '1px solid #ddd',
-                }}
-              >
-                <option value="">선택하세요</option>
-                {allCharacters.map((char) => (
-                  <option key={char.id} value={char.id}>
-                    {char.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                관계 유형
-              </label>
-              <input
-                type="text"
-                value={newRelation.relationType}
-                onChange={(e) =>
-                  setNewRelation({ ...newRelation, relationType: e.target.value })
-                }
-                placeholder="예: friend, rival, family"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  fontSize: '14px',
-                  borderRadius: '5px',
-                  border: '1px solid #ddd',
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                친밀도: {newRelation.closeness.toFixed(1)}
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="10"
-                step="0.1"
-                value={newRelation.closeness}
-                onChange={(e) =>
-                  setNewRelation({ ...newRelation, closeness: parseFloat(e.target.value) })
-                }
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                설명
-              </label>
-              <textarea
-                value={newRelation.description}
-                onChange={(e) =>
-                  setNewRelation({ ...newRelation, description: e.target.value })
-                }
-                placeholder="관계에 대한 설명을 입력하세요"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  fontSize: '14px',
-                  borderRadius: '5px',
-                  border: '1px solid #ddd',
-                  minHeight: '80px',
-                  resize: 'vertical',
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setShowAddModal(false)}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  backgroundColor: '#6b7280',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                }}
-              >
-                취소
-              </button>
-              <button
-                onClick={handleCreateRelationship}
-                disabled={loading}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '14px',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  backgroundColor: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                }}
-              >
-                {loading ? '생성 중...' : '생성'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    </main>
+  )
 }
