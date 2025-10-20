@@ -20,6 +20,7 @@ llm-server/*.pyo
 llm-server/*.pyd
 llm-server/.venv/
 llm-server/venv/
+llm-server/.env
 
 # IDE
 .idea/

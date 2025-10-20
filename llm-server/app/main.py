@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import os
@@ -105,11 +105,24 @@ def get_providers():
 
 
 @app.post("/gen/suggest", response_model=SuggestResponse)
-def gen_suggest(inp: SuggestInput) -> SuggestResponse:
+async def gen_suggest(request: Request) -> SuggestResponse:
     """
     대사 톤 제안 API
     캐릭터 페르소나를 바탕으로 LLM을 사용하여 대사를 생성합니다.
     """
+    # 요청 본문 로깅
+    try:
+        body = await request.body()
+        logger.info(f"Received request body: {body.decode('utf-8')}")
+
+        # JSON 파싱
+        import json
+        data = json.loads(body)
+        inp = SuggestInput(**data)
+    except Exception as e:
+        logger.error(f"Error parsing request: {e}")
+        raise
+
     logger.info(f"Generating dialogue for speaker: {inp.speakerId}, intent: {inp.intent}")
 
     # 캐릭터 정보가 없으면 더미 응답 반환

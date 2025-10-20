@@ -1,5 +1,6 @@
 package com.jwyoo.api.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jwyoo.api.dto.CharacterInfoDto;
 import com.jwyoo.api.dto.LlmSuggestRequest;
 import com.jwyoo.api.dto.SuggestRequest;
@@ -8,6 +9,7 @@ import com.jwyoo.api.repository.CharacterRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -24,7 +26,15 @@ public class LlmClient {
     private String llmBaseUrl;
 
     private final CharacterRepository characterRepository;
-    private final RestClient restClient = RestClient.create();
+    private final ObjectMapper objectMapper;
+
+    private RestClient getRestClient() {
+        return RestClient.builder()
+                .messageConverters(converters -> {
+                    converters.add(new MappingJackson2HttpMessageConverter(objectMapper));
+                })
+                .build();
+    }
 
     public Map<String, Object> suggest(SuggestRequest request) {
         try {
@@ -69,8 +79,9 @@ public class LlmClient {
             log.info("Sending request to LLM server: speaker={}, intent={}, provider={}",
                     request.speakerId(), request.intent(), request.provider());
 
-            return restClient.post()
+            return getRestClient().post()
                     .uri(llmBaseUrl + "/gen/suggest")
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                     .body(llmRequest)
                     .retrieve()
                     .body(Map.class);
