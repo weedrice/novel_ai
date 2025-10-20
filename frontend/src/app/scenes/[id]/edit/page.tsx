@@ -129,6 +129,8 @@ export default function SceneEditPage() {
 
       if (data.generatedDialogues) {
         setGeneratedDialogues(data.generatedDialogues);
+      } else if (data.dialogues) {
+        setGeneratedDialogues(data.dialogues);
       }
     } catch (err: any) {
       setError(`시나리오 생성 실패: ${err.message}`);
