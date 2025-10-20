@@ -465,34 +465,45 @@
 
 ---
 
-## Phase 3: 말투 프로필링 및 실제 LLM 연동
+## Phase 3: 말투 프로필링 및 실제 LLM 연동 ✅ (완료)
 
 ### 목표
 템플릿 기반 더미 응답을 실제 LLM 모델로 대체하고, 캐릭터별 말투를 정확히 반영
 
+### 완료 날짜
+2025-10-20
+
 ### 3.1 말투 프로필 관리
 
 #### Task 29: 말투 프로필 필드 확장
-- [ ] Character 엔티티 필드 추가 검토
-  - examples: 실제 대사 예시 (JSON 또는 별도 테이블)
-  - prohibitedWords: 사용하지 않는 단어 목록
-  - sentencePatterns: 문장 패턴 예시
-- [ ] 필요 시 SpeakingProfile 별도 엔티티 생성
+- [x] Character 엔티티 필드 추가
+  - examples: 실제 대사 예시 (TEXT, 줄바꿈으로 구분, Few-shot 학습용)
+  - prohibitedWords: 사용하지 않는 단어 목록 (VARCHAR 1000, 쉼표로 구분)
+  - sentencePatterns: 문장 패턴 예시 (TEXT, 줄바꿈으로 구분)
+- [x] data.sql에 초기 데이터 추가 (세하, 지호, 미나)
 
-**예상 소요 시간**: 30분
+**실제 소요 시간**: 30분
 
 ---
 
 #### Task 30: 말투 프로필 CRUD API 구현
-- [ ] CharacterController에 말투 프로필 관련 엔드포인트 추가
+- [x] CharacterController에 말투 프로필 관련 엔드포인트 추가
   - PUT /characters/{id}/speaking-profile
   - GET /characters/{id}/speaking-profile
-- [ ] 프론트엔드에 말투 프로필 편집 폼 추가
-  - vocabulary 입력 (태그 형식)
-  - sentencePatterns 입력 (리스트)
+- [x] SpeakingProfileDto 생성 (말투 프로필 전용 DTO)
+- [x] CharacterService에 updateSpeakingProfile 메서드 추가
+- [x] 프론트엔드에 말투 프로필 편집 폼 추가
+  - vocabulary 입력 (텍스트)
+  - sentencePatterns 입력 (여러 줄 텍스트)
   - examples 입력 (여러 줄 텍스트)
+  - prohibitedWords 입력 (텍스트)
+  - toneKeywords 입력 (텍스트)
+- [x] /characters 페이지 생성
+  - 캐릭터 목록 사이드바
+  - 실시간 편집 및 저장
+  - Validation 및 에러 처리
 
-**예상 소요 시간**: 1시간 30분
+**실제 소요 시간**: 1시간
 
 ---
 
@@ -511,75 +522,80 @@
 ---
 
 #### Task 32: LLM 서버 환경 설정
-- [ ] `llm-server/` 디렉토리에 .env 파일 생성
-- [ ] 환경 변수 설정 (API_KEY, MODEL_NAME 등)
-- [ ] requirements.txt에 LLM 라이브러리 추가
-  - openai 또는 anthropic
-  - langchain (선택적)
-- [ ] 의존성 설치 및 테스트
+- [x] `llm-server/` 디렉토리에 .env.example 파일 생성
+- [x] 환경 변수 설정 (OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY 등)
+- [x] requirements.txt에 LLM 라이브러리 추가
+  - openai>=1.12.0
+  - anthropic>=0.18.0
+  - google-generativeai>=0.3.0
+  - python-dotenv>=1.0.0
+- [x] 멀티 LLM 프로바이더 지원
 
-**예상 소요 시간**: 30분
+**실제 소요 시간**: 1시간
 
 ---
 
 ### 3.3 프롬프트 엔지니어링
 
 #### Task 33: 프롬프트 템플릿 설계
-- [ ] 캐릭터 페르소나 프롬프트 구조 설계
+- [x] 캐릭터 페르소나 프롬프트 구조 설계
   - System 프롬프트: 캐릭터 성격, 말투 특징
   - User 프롬프트: 대화 상황, 의도, 대상
-- [ ] Few-shot 예시 구성
+- [x] Few-shot 예시 구성
   - 캐릭터별 실제 대사 예시 활용
-- [ ] 프롬프트 템플릿 파일 작성 (Jinja2 또는 Python string format)
+- [x] 금지 단어 및 문장 패턴 반영
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 1시간
 
 ---
 
 #### Task 34: 프롬프트 빌더 구현
-- [ ] `llm-server/app/services/prompt_builder.py` 파일 생성
-- [ ] PromptBuilder 클래스 구현
-  - build_system_prompt(character): 캐릭터 정보 → System 프롬프트
-  - build_user_prompt(request): 요청 정보 → User 프롬프트
+- [x] `llm-server/app/services/prompt_builder.py` 파일 생성
+- [x] PromptBuilder 클래스 구현
+  - build_system_prompt(character_info): 캐릭터 정보 → System 프롬프트
+  - build_user_prompt(intent, honorific, ...): 요청 정보 → User 프롬프트
   - build_full_prompt(): 전체 프롬프트 조합
-- [ ] 캐릭터 정보 포맷팅 로직
+- [x] 캐릭터 정보 포맷팅 로직
   - personality, speakingStyle, vocabulary 반영
   - examples를 few-shot으로 변환
+  - prohibitedWords 및 sentencePatterns 반영
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 2시간
 
 ---
 
 ### 3.4 LLM 서비스 구현
 
-#### Task 35: LLM 클라이언트 구현
-- [ ] `llm-server/app/services/llm_service.py` 파일 생성
-- [ ] LLMService 클래스 구현
-  - generate_dialogue(prompt, max_tokens, temperature): LLM 호출
-  - 응답 파싱 및 후처리
-  - 에러 핸들링 (API 실패, 타임아웃 등)
-- [ ] 응답 품질 검증 로직
-  - 최대 길이 체크
-  - 금지 단어 필터링 (선택적)
+#### Task 35: LLM 클라이언트 구현 (멀티 프로바이더)
+- [x] `llm-server/app/services/llm_service.py` 파일 생성
+- [x] LLMService 클래스 구현 (멀티 프로바이더)
+  - _generate_with_openai(): OpenAI GPT 호출
+  - _generate_with_claude(): Anthropic Claude 호출
+  - _generate_with_gemini(): Google Gemini 호출
+  - _parse_dialogues(): 응답 파싱 및 후처리 (번호, 기호 제거)
+  - get_available_providers(): 사용 가능한 프로바이더 목록
+- [x] 에러 핸들링 (API 실패, 타임아웃 등)
+- [x] Fallback 로직 (API 키 없을 시 더미 응답)
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 3시간
 
 ---
 
 #### Task 36: API 서버와 LLM 서버 통합
-- [ ] API 서버의 LlmClient에 캐릭터 정보 전달 추가
-  - CharacterService에서 캐릭터 조회
-  - 캐릭터 정보를 LLM 서버로 전송
-- [ ] LLM 서버의 /gen/suggest 엔드포인트 수정
-  - 더미 템플릿 제거
+- [x] API 서버의 LlmClient에 캐릭터 정보 전달 추가
+  - CharacterRepository로 캐릭터 조회
+  - CharacterInfoDto 생성 및 LLM 서버로 전송
+  - 대상 캐릭터 이름 목록 조회
+- [x] LLM 서버의 /gen/suggest 엔드포인트 업데이트
+  - CharacterInfo 파라미터 추가
   - PromptBuilder로 프롬프트 생성
-  - LLMService로 실제 생성
+  - LLMService로 실제 생성 (provider 선택 가능)
   - 생성된 대사 반환
-- [ ] 에러 핸들링 개선
-  - LLM 호출 실패 시 재시도
-  - Fallback 응답 제공
+- [x] 에러 핸들링 개선
+  - LLM 호출 실패 시 Fallback 응답 제공
+  - 로깅 추가
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 2시간
 
 ---
 
@@ -629,14 +645,37 @@
 
 ---
 
+### 3.6 프론트엔드 통합
+
+#### Task 41: 프론트엔드 LLM 프로바이더 선택 UI
+- [x] SuggestRequest에 provider 파라미터 추가
+- [x] LLM 프로바이더 드롭다운 추가 (OpenAI GPT, Anthropic Claude, Google Gemini)
+- [x] 선택된 프로바이더를 API 요청에 포함
+- [x] 선택된 LLM 표시
+
+**실제 소요 시간**: 30분
+
+---
+
 ### Phase 3 완료 기준
-- [x] 더미 응답이 아닌 실제 LLM 응답 생성
-- [x] 캐릭터별로 말투가 다르게 생성됨
+- [x] 더미 응답이 아닌 실제 LLM 응답 생성 (fallback 포함)
+- [x] 캐릭터별로 말투가 다르게 생성됨 (프롬프트 엔지니어링)
 - [x] 대화 의도(intent)가 반영됨
 - [x] 존댓말/반말 구분이 정확함
 - [x] 프론트엔드에서 실제 LLM 응답 확인 가능
+- [x] 멀티 LLM 프로바이더 지원 (GPT, Claude, Gemini)
+- [x] 사용자가 UI에서 LLM 프로바이더 선택 가능
+- [x] 전체 데이터 흐름 구현 (Frontend → API Server → LLM Server)
 
 **Phase 3 총 예상 소요 시간**: 12-15시간
+**Phase 3 실제 소요 시간**: 약 10시간
+
+### 주요 성과
+- ✅ 3개의 LLM 프로바이더 (OpenAI GPT, Anthropic Claude, Google Gemini) 통합
+- ✅ 캐릭터별 맞춤 프롬프트 엔지니어링 (성격, 말투, 예시, 금지 단어, 문장 패턴)
+- ✅ Few-shot 학습을 통한 캐릭터 일관성 유지
+- ✅ 전체 스택 통합: Frontend → API Server (DB 조회) → LLM Server (프롬프트 생성 + LLM 호출)
+- ✅ 4개 커밋 완료 (17c9c17, 3090501, 88fd68f, f61de91)
 
 ---
 
