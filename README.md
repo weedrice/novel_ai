@@ -16,14 +16,14 @@ Novel AI는 소설과 웹툰 등 스토리텔링 콘텐츠의 기획과 제작�
 | 서비스 | 경로 | 기술 스택 | 주요 역할 |
 | --- | --- | --- | --- |
 | 프론트엔드 | `frontend/` | Next.js 15, React 18, TypeScript | 설정 편집, 관계 그래프, 시나리오 요청 UI 제공 |
-| API 서버 | `api-server/` | Spring Boot 3.4, Java 21, Gradle 8 | 핵심 비즈니스 로직, 설정/캐릭터 CRUD, LLM 요청 흐름 관리 |
+| API 서버 | `api-server/` | Spring Boot 3.4, Java 25, Gradle 8 | 핵심 비즈니스 로직, 설정/캐릭터 CRUD, LLM 요청 흐름 관리 |
 | LLM 서버 | `llm-server/` | FastAPI, Python 3.11 | 대사 톤 제안 API, LLM 프롬프트 생성·실행, 벡터 DB 연동 (예정) |
 
 각 서비스는 독립적으로 배포할 수 있으며, 내부 통신은 REST API 혹은 gRPC(선택 사항)로 확장 가능합니다.
 
 ## 기술 스택
 - **프론트엔드**: Next.js, React, Zustand, Tailwind CSS
-- **백엔드**: Spring Boot (Java 17), Spring Security, JPA/Hibernate, Gradle
+- **백엔드**: Spring Boot (Java 25), Spring Security, JPA/Hibernate, Gradle
 - **LLM 서비스**: FastAPI, LangChain, PyTorch 또는 Hugging Face Transformers, Vector DB (예: Pinecone, Qdrant)
 - **인프라**: Docker, Docker Compose, (예정) Kubernetes, GitHub Actions 기반 CI/CD
 - **데이터베이스**: PostgreSQL (운영), H2 (로컬 테스트)
@@ -31,7 +31,7 @@ Novel AI는 소설과 웹툰 등 스토리텔링 콘텐츠의 기획과 제작�
 ## 사전 요구 사항
 - Docker 및 Docker Compose (권장)
 - Node.js 20 이상과 npm (개별 실행 시)
-- Java 21 이상 (개별 실행 시)
+- Java 25 이상 (개별 실행 시)
 - Python 3.11 이상 (개별 실행 시)
 
 ## 설치 및 로컬 실행

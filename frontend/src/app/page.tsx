@@ -56,6 +56,24 @@ export default function Home() {
       <h1>등장인물 대사 톤 보조 시스템</h1>
       <p style={{ color: '#666' }}>Character Dialogue Tone Assistant System</p>
 
+      <div style={{ marginBottom: 20 }}>
+        <a
+          href="/graph"
+          style={{
+            padding: '10px 20px',
+            fontSize: 16,
+            backgroundColor: '#8b5cf6',
+            color: 'white',
+            border: 'none',
+            borderRadius: 5,
+            textDecoration: 'none',
+            display: 'inline-block',
+          }}
+        >
+          캐릭터 관계 그래프 보기
+        </a>
+      </div>
+
       <hr style={{ margin: '20px 0' }} />
 
       <section style={{ marginBottom: 30 }}>
