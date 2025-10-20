@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Character Tone Assistant',
@@ -12,6 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
+      <head>
+        <meta charSet="utf-8" />
+      </head>
       <body>{children}</body>
     </html>
   );
