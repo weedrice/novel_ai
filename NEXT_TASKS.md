@@ -721,15 +721,25 @@
 
 ---
 
-#### Task 43: 시나리오 버전 관리 (선택적)
-- [ ] ScenarioVersion 엔티티 생성
-  - sceneId, version, content, createdAt
-- [ ] 시나리오 저장 및 버전 관리 API
+#### Task 43: 시나리오 버전 관리
+- [x] ScenarioVersion 엔티티 생성
+  - sceneId, version, title, content, createdAt, createdBy
+- [x] ScenarioVersionRepository 구현
+  - 버전 목록 조회, 특정 버전 조회, 최신 버전 번호 조회
+- [x] ScenarioVersionService 구현
+  - 버전 저장, 조회, 삭제 로직
+- [x] 시나리오 저장 및 버전 관리 API
   - POST /scenes/{sceneId}/scenarios: 시나리오 저장
   - GET /scenes/{sceneId}/scenarios: 버전 목록 조회
-  - GET /scenarios/{versionId}: 특정 버전 조회
+  - GET /scenes/scenarios/{versionId}: 특정 버전 조회
+  - DELETE /scenes/scenarios/{versionId}: 버전 삭제
+- [x] 프론트엔드 버전 관리 UI
+  - 💾 "현재 버전 저장" 버튼
+  - 🕐 "저장된 버전 보기" 모달
+  - 버전 불러오기 기능
 
-**상태**: 향후 개선 사항으로 보류
+**실제 소요 시간**: 2시간
+**완료 날짜**: 2025-10-20
 
 ---
 
@@ -774,15 +784,26 @@
 #### Task 46: 대사 편집 기능 구현
 - [x] 기존 대사 표시 (데이터베이스)
 - [x] 생성된 대사 표시 (LLM)
-- [ ] 대사 추가 버튼 (향후 개선)
+- [x] 대사 추가 버튼
   - 화자 선택, 대사 입력
-- [ ] 대사 수정 (향후 개선)
-- [ ] 대사 삭제 버튼 (향후 개선)
+  - 어투 선택 (반말/존댓말)
+  - 모달 기반 UI
+- [x] 대사 수정
+  - 인라인 편집 (textarea 전환)
+  - 실시간 저장
+- [x] 대사 삭제 버튼
+  - 확인 다이얼로그
+  - 실시간 목록 갱신
+- [x] 백엔드 대사 CRUD API
+  - POST /dialogue: 대사 추가
+  - PUT /dialogue/{id}: 대사 수정
+  - DELETE /dialogue/{id}: 대사 삭제
+  - GET /dialogue/{id}: 대사 조회
+  - GET /dialogue/scene/{sceneId}: 장면별 대사 조회
 - [ ] 대사 순서 변경 드래그 앤 드롭 (향후 개선)
-- [ ] 변경 사항 저장 API 호출 (향후 개선)
 
-**실제 소요 시간**: 1시간 (기본 표시 기능)
-**향후 개선**: 실시간 편집 기능
+**실제 소요 시간**: 3시간
+**완료 날짜**: 2025-10-20
 
 ---
 
