@@ -70,7 +70,7 @@ export default function Home() {
         </div>
 
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <a
             href="/graph"
             className="block p-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-md transition-colors duration-200"
@@ -84,6 +84,13 @@ export default function Home() {
           >
             <div className="text-xl font-semibold mb-2">말투 프로필 관리</div>
             <p className="text-amber-100 text-sm">캐릭터의 말투와 성격을 관리하세요</p>
+          </a>
+          <a
+            href="/scenes"
+            className="block p-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md transition-colors duration-200"
+          >
+            <div className="text-xl font-semibold mb-2">시나리오 편집기</div>
+            <p className="text-emerald-100 text-sm">장면별 시나리오를 생성하고 편집하세요</p>
           </a>
         </div>
 
