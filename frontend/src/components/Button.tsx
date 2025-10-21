@@ -19,11 +19,11 @@ export default function Button({
   className?: string;
 }) {
   const variants = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-    secondary: 'bg-gray-600 hover:bg-gray-700 text-white',
-    success: 'bg-green-600 hover:bg-green-700 text-white',
-    warning: 'bg-yellow-600 hover:bg-yellow-700 text-white',
-    danger: 'bg-red-600 hover:bg-red-700 text-white',
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm',
+    secondary: 'bg-slate-600 hover:bg-slate-700 text-white shadow-sm',
+    success: 'bg-green-600 hover:bg-green-700 text-white shadow-sm',
+    warning: 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm',
+    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm',
   };
 
   const sizes = {

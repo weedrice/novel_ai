@@ -25,11 +25,11 @@ export default function StatusPage() {
         checks.map(async (c) => {
           try {
             const res = await fetch(c.url!, { cache: "no-store" });
-            if (!res.ok) return { ...c, status: "fail", detail: `HTTP ${res.status}` };
+            if (!res.ok) return { ...c, status: "fail" as const, detail: `HTTP ${res.status}` };
             const j = await res.json().catch(() => ({}));
-            return { ...c, status: "ok", detail: JSON.stringify(j) };
+            return { ...c, status: "ok" as const, detail: JSON.stringify(j) };
           } catch (e: any) {
-            return { ...c, status: "fail", detail: e?.message || "error" };
+            return { ...c, status: "fail" as const, detail: e?.message || "error" };
           }
         })
       );

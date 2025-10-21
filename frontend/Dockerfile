@@ -8,9 +8,6 @@ COPY package.json package-lock.json* ./
 # Install dependencies
 RUN npm ci || npm install
 
-# Healthcheck dependency
-RUN apk add --no-cache curl
-
 # Copy source code
 COPY . .
 
