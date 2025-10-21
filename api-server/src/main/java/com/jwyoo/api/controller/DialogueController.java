@@ -25,7 +25,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/dialogue")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class DialogueController {
 
     private final LlmClient llmClient;

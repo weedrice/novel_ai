@@ -1,5 +1,6 @@
 package com.jwyoo.api.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -81,10 +83,31 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * NoResourceFoundException 예외 처리 (actuator 등 설정되지 않은 리소스 요청)
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFound(NoResourceFoundException ex) {
+        String message = ex.getMessage();
+
+        // actuator 관련 요청은 로그를 남기지 않고 조용히 처리
+        if (message != null && message.contains("actuator")) {
+            return buildErrorResponse(HttpStatus.NOT_FOUND, "Resource not found", null);
+        }
+
+        log.warn("Resource not found: {}", message);
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다.", null);
+    }
+
+    /**
      * 일반적인 예외 처리
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
+        // NoResourceFoundException은 이미 위에서 처리되므로 제외
+        if (ex instanceof NoResourceFoundException) {
+            return handleNoResourceFound((NoResourceFoundException) ex);
+        }
+
         log.error("Unexpected error occurred", ex);
         return buildErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,

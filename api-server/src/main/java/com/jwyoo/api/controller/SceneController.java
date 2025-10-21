@@ -1,4 +1,4 @@
-﻿package com.jwyoo.api.controller;
+package com.jwyoo.api.controller;
 
 import com.jwyoo.api.entity.Character;
 import com.jwyoo.api.entity.Dialogue;
@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/scenes")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class SceneController {
 
     private final SceneService sceneService;
