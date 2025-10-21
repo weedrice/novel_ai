@@ -364,7 +364,13 @@ export default function SceneEditPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => window.location.href = '/'}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-sm"
+              >
+                홈으로
+              </button>
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
                 장면 {scene.sceneNumber} 편집
               </h1>
@@ -531,7 +537,7 @@ export default function SceneEditPage() {
                       </div>
                       <div className="flex-1">
                         <div className="font-semibold text-gray-800 mb-1">
-                          {dialogue.character.name}
+                          {dialogue.character?.name || 'Unknown'}
                         </div>
                         <p className="text-gray-700">{dialogue.text}</p>
                         {dialogue.intent && (
