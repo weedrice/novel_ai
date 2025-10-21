@@ -5,6 +5,7 @@ import com.jwyoo.api.entity.Dialogue;
 import com.jwyoo.api.entity.Scene;
 import com.jwyoo.api.exception.ResourceNotFoundException;
 import com.jwyoo.api.repository.CharacterRepository;
+import com.jwyoo.api.repository.DialogueRepository;
 import com.jwyoo.api.repository.SceneRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class SceneService {
 
     private final SceneRepository sceneRepository;
     private final CharacterRepository characterRepository;
+    private final DialogueRepository dialogueRepository;
 
     /**
      * 모든 장면 조회
@@ -138,7 +140,7 @@ public class SceneService {
      */
     public List<Dialogue> getDialogues(Long sceneId) {
         log.debug("Fetching dialogues for scene: {}", sceneId);
-        Scene scene = getSceneById(sceneId);
-        return scene.getDialogues();
+        // Use DialogueRepository directly to ensure character is fetched
+        return dialogueRepository.findBySceneIdOrderByDialogueOrderAsc(sceneId);
     }
 }

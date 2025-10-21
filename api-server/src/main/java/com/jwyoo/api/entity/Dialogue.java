@@ -1,5 +1,6 @@
 package com.jwyoo.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,10 +21,12 @@ public class Dialogue {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "scene_id", nullable = false)
+    @JsonIgnoreProperties({"dialogues", "episode"})
     private Scene scene;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "character_id", nullable = false)
+    @JsonIgnoreProperties({"dialogues", "relationshipsFrom", "relationshipsTo"})
     private Character character;
 
     @Column(nullable = false, length = 2000)
