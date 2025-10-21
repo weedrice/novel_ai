@@ -2,9 +2,12 @@ FROM python:3.11.9-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies including CA certificates for SSL
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends \
+       curl \
+       ca-certificates \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Python deps

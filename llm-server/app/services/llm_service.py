@@ -4,10 +4,12 @@ LLM 서비스
 """
 
 import os
+import re
 from typing import List, Dict, Optional
 from openai import OpenAI, OpenAIError
 import anthropic
 import google.generativeai as genai
+from google.api_core import exceptions as google_exceptions
 import logging
 
 logger = logging.getLogger(__name__)
@@ -110,6 +112,7 @@ class LLMService:
             return self._generate_fallback_dialogues(n_candidates)
 
         try:
+            logger.info(f"Calling OpenAI API with model={self.openai_model}, n_candidates={n_candidates}")
             response = self.openai_client.chat.completions.create(
                 model=self.openai_model,
                 messages=[
@@ -118,11 +121,19 @@ class LLMService:
                 ],
                 max_tokens=max_tokens or self.openai_max_tokens,
                 temperature=temperature or self.openai_temperature,
-                n=1
+                n=n_candidates
             )
 
-            content = response.choices[0].message.content.strip()
-            return self._parse_dialogues(content, n_candidates)
+            # 여러 후보가 있으면 모두 수집
+            dialogues = []
+            for choice in response.choices:
+                content = choice.message.content.strip()
+                logger.debug(f"OpenAI response choice: {content[:100]}...")
+                parsed = self._parse_dialogues(content, 1)
+                dialogues.extend(parsed)
+
+            logger.info(f"OpenAI generated {len(dialogues)} dialogues")
+            return dialogues[:n_candidates] if dialogues else self._generate_fallback_dialogues(n_candidates)
 
         except OpenAIError as e:
             logger.error(f"OpenAI API error: {e}")
@@ -145,18 +156,28 @@ class LLMService:
             return self._generate_fallback_dialogues(n_candidates)
 
         try:
+            # Claude는 여러 후보를 직접 생성하지 못하므로 프롬프트에 명시
+            if n_candidates > 1:
+                modified_prompt = f"{user_prompt}\n\n{n_candidates}개의 다른 대사 후보를 각 줄에 하나씩 생성해주세요."
+            else:
+                modified_prompt = user_prompt
+
+            logger.info(f"Calling Claude API with model={self.anthropic_model}, n_candidates={n_candidates}")
             message = self.anthropic_client.messages.create(
                 model=self.anthropic_model,
                 max_tokens=max_tokens or self.anthropic_max_tokens,
                 temperature=temperature or self.anthropic_temperature,
                 system=system_prompt,
                 messages=[
-                    {"role": "user", "content": user_prompt}
+                    {"role": "user", "content": modified_prompt}
                 ]
             )
 
             content = message.content[0].text.strip()
-            return self._parse_dialogues(content, n_candidates)
+            logger.debug(f"Claude response: {content[:100]}...")
+            dialogues = self._parse_dialogues(content, n_candidates)
+            logger.info(f"Claude generated {len(dialogues)} dialogues")
+            return dialogues
 
         except anthropic.APIError as e:
             logger.error(f"Anthropic API error: {e}")
@@ -180,23 +201,50 @@ class LLMService:
 
         try:
             # Gemini는 system prompt를 instruction으로 처리
-            full_prompt = f"{system_prompt}\n\n{user_prompt}"
+            # n_candidates > 1이면 프롬프트에 명시
+            if n_candidates > 1:
+                full_prompt = f"{system_prompt}\n\n{user_prompt}\n\n{n_candidates}개의 다른 대사 후보를 각 줄에 하나씩 생성해주세요."
+            else:
+                full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
-            generation_config = genai.types.GenerationConfig(
+            logger.info(f"Calling Gemini API with model={self.gemini_model}, n_candidates={n_candidates}")
+
+            generation_config = genai.GenerationConfig(
                 temperature=temperature or self.gemini_temperature,
                 max_output_tokens=max_tokens or self.gemini_max_tokens,
+                candidate_count=1,  # Gemini는 현재 candidate_count > 1 미지원, 프롬프트로 처리
             )
 
+            # Safety settings를 제거하고 기본값 사용 (차단 방지)
             response = self.gemini_model_instance.generate_content(
                 full_prompt,
                 generation_config=generation_config
             )
 
-            content = response.text.strip()
-            return self._parse_dialogues(content, n_candidates)
+            # 응답 처리
+            if not response.candidates:
+                logger.warning("Gemini returned no candidates")
+                return self._generate_fallback_dialogues(n_candidates)
 
+            # 첫 번째 candidate의 텍스트 추출
+            content = response.text.strip()
+            logger.debug(f"Gemini response: {content[:100]}...")
+
+            dialogues = self._parse_dialogues(content, n_candidates)
+            logger.info(f"Gemini generated {len(dialogues)} dialogues")
+            return dialogues
+
+        except google_exceptions.GoogleAPIError as e:
+            logger.error(f"Google API error: {e}")
+            return self._generate_fallback_dialogues(n_candidates)
+        except google_exceptions.InvalidArgument as e:
+            logger.error(f"Invalid argument to Gemini API: {e}")
+            return self._generate_fallback_dialogues(n_candidates)
+        except ValueError as e:
+            logger.error(f"Gemini response blocked or invalid: {e}")
+            return self._generate_fallback_dialogues(n_candidates)
         except Exception as e:
-            logger.error(f"Unexpected error with Gemini: {e}")
+            logger.error(f"Unexpected error with Gemini: {e}", exc_info=True)
             return self._generate_fallback_dialogues(n_candidates)
 
     def _parse_dialogues(self, content: str, n_candidates: int) -> List[str]:
@@ -216,7 +264,6 @@ class LLMService:
         # 번호나 기호 제거
         cleaned_dialogues = []
         for dialogue in dialogues:
-            import re
             # 숫자, 점, 대시, 불릿 포인트 제거
             cleaned = re.sub(r'^\d+[\.\)]\s*', '', dialogue)  # "1. " or "1) "
             cleaned = re.sub(r'^[-•\*]\s*', '', cleaned)      # "- " or "• " or "* "
