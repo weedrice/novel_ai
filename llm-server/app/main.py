@@ -99,18 +99,24 @@ def get_providers():
 
 
 @app.post("/gen/suggest", response_model=SuggestResponse)
-async def gen_suggest(request: Request) -> SuggestResponse:
+async def gen_suggest(request: Request, inp: SuggestInput = None) -> SuggestResponse:
     """Generate short dialogue suggestions based on persona and intent."""
+
+    # Log raw request for debugging
     try:
         body = await request.body()
-        logger.info(f"Received request body: {body.decode('utf-8', errors='ignore')}")
-        import json
-
-        data = json.loads(body)
-        inp = SuggestInput(**data)
+        logger.info(f"Raw request body: {body.decode('utf-8')[:500]}")
     except Exception as e:
-        logger.error(f"Error parsing request: {e}")
-        raise
+        logger.error(f"Could not read request body: {e}")
+
+    if inp is None:
+        logger.error("Input is None!")
+        return _generate_fallback_response(SuggestInput(
+            speakerId="unknown",
+            targetIds=[],
+            intent="greet",
+            honorific="banmal"
+        ))
 
     logger.info(
         f"Generating dialogue for speaker={inp.speakerId}, intent={inp.intent}, provider={inp.provider or llm_service.default_provider}"
