@@ -1,9 +1,18 @@
+/**
+ * 인물 관계도 페이지 (개선 버전)
+ * - React Flow + dagre 레이아웃
+ * - 커스텀 노드 (PersonNode)
+ * - 범례 (Legend)
+ * - 레이아웃 전환 (수평/수직)
+ * - 향상된 UX/UI
+ */
 'use client'
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import ReactFlow, {
   Background,
   Controls,
+  MiniMap,
   Edge,
   MarkerType,
   Node,
@@ -11,13 +20,25 @@ import ReactFlow, {
   useEdgesState,
   useNodesState,
   Connection,
+  ReactFlowProvider,
+  Panel,
+  useReactFlow,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import ErrorMessage from '@/components/ErrorMessage'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Button from '@/components/Button'
+import PersonNode from '@/components/graph/PersonNode'
+import Legend from '@/components/graph/Legend'
+import { applyDagreLayout, LayoutDirection } from '@/components/graph/utils/layout'
+import { Person, Relation, RelationType, RELATION_COLORS } from '@/components/graph/types'
 
 const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
+
+// 노드 타입 등록
+const nodeTypes = {
+  person: PersonNode,
+}
 
 type GraphNode = {
   id: string
@@ -32,26 +53,15 @@ type GraphEdge = {
   closeness?: number
 }
 
-export default function GraphPage() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([])
+function GraphPageContent() {
+  const [nodes, setNodes, onNodesChange] = useNodesState<Person>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [relationTypes, setRelationTypes] = useState<string[]>([])
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null)
+  const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>('TB')
+  const [selectedNode, setSelectedNode] = useState<Node<Person> | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [showAdd, setShowAdd] = useState(false)
-  const [characters, setCharacters] = useState<{ id: number; name: string }[]>([])
-  const [newRel, setNewRel] = useState({
-    fromCharacterId: '',
-    toCharacterId: '',
-    relationType: 'friend',
-    closeness: 5,
-    description: '',
-  })
+  const reactFlowInstance = useReactFlow()
 
   const fetchGraph = useCallback(async () => {
     setLoading(true)
@@ -64,129 +74,171 @@ export default function GraphPage() {
       const rawNodes: GraphNode[] = Array.isArray(data?.nodes) ? data.nodes : []
       const rawEdges: GraphEdge[] = Array.isArray(data?.edges) ? data.edges : []
 
-      const flowNodes: Node[] = rawNodes.map((n, i, arr) => ({
+      // Person 타입으로 변환
+      const personNodes: Node<Person>[] = rawNodes.map((n) => ({
         id: n.id,
-        data: { label: n.label },
-        position: {
-          x: Math.cos((i / Math.max(arr.length, 1)) * 2 * Math.PI) * 300 + 500,
-          y: Math.sin((i / Math.max(arr.length, 1)) * 2 * Math.PI) * 300 + 400,
+        type: 'person',
+        data: {
+          id: n.id,
+          name: n.label,
+          label: n.label,
         },
-        style: {
-          background: 'white',
-          border: '2px solid #4f46e5',
-          color: '#111827',
-          borderRadius: 12,
-          padding: '10px 14px',
-          fontWeight: 600,
-        },
+        position: { x: 0, y: 0 }, // dagre가 재계산
       }))
 
+      // 엣지 생성
       const flowEdges: Edge[] = rawEdges.map((e) => {
         const closeness = e.closeness ?? 5
-        const color = closeness >= 8 ? '#10b981' : closeness >= 6 ? '#3b82f6' : '#6b7280'
+        const relationType: RelationType = 'friend' // 기본값, API에서 타입 정보가 있으면 사용
+        const color = RELATION_COLORS[relationType] || '#6b7280'
+        const strokeWidth = Math.max(1.5, Math.min(closeness / 2, 5))
+
         return {
           id: e.id,
           source: e.source,
           target: e.target,
-          label: [e.label, typeof e.closeness === 'number' ? `(${e.closeness.toFixed(1)})` : '']
-            .filter(Boolean)
-            .join(' '),
-          markerEnd: { type: MarkerType.ArrowClosed, color, width: 20, height: 20 },
-          style: { stroke: color, strokeWidth: Math.max(2, closeness / 2) },
-          labelStyle: { fontSize: 12, fontWeight: 600, fill: color },
-          labelBgPadding: [6, 3],
+          label: e.label,
+          type: 'default',
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color,
+            width: 20,
+            height: 20
+          },
+          style: {
+            stroke: color,
+            strokeWidth,
+          },
+          labelStyle: {
+            fontSize: 11,
+            fontWeight: 600,
+            fill: color
+          },
+          labelBgPadding: [6, 4] as [number, number],
           labelBgBorderRadius: 6,
-          labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85, stroke: color, strokeOpacity: 0.3 },
-          data: e,
+          labelBgStyle: {
+            fill: '#ffffff',
+            fillOpacity: 0.9,
+            stroke: color,
+            strokeWidth: 1,
+            strokeOpacity: 0.4
+          },
+          data: { ...e, type: relationType },
+          animated: closeness >= 8, // 친밀도 높으면 애니메이션
         }
       })
 
-      setNodes(flowNodes)
+      // dagre 레이아웃 적용
+      const layouted = applyDagreLayout(personNodes, flowEdges, {
+        direction: layoutDirection,
+        nodeWidth: 180,
+        nodeHeight: 100,
+        rankSep: 120,
+        nodeSep: 100,
+      })
+
+      setNodes(layouted)
       setEdges(flowEdges)
-      const types = Array.from(new Set<string>(rawEdges.map((e) => String(e.label || '')).filter(Boolean)))
-      setRelationTypes(types)
+
+      // 레이아웃 후 fitView
+      setTimeout(() => {
+        reactFlowInstance.fitView({ padding: 0.2, duration: 400 })
+      }, 50)
+
     } catch (e: any) {
       setError(`그래프 로드 실패: ${e?.message || e}`)
     } finally {
       setLoading(false)
     }
-  }, [setNodes, setEdges])
+  }, [layoutDirection, setNodes, setEdges, reactFlowInstance])
 
   useEffect(() => {
     fetchGraph()
-    ;(async () => {
-      try {
-        const res = await fetch(`${API}/characters`, { cache: 'no-store' })
-        const data = await res.json()
-        setCharacters((Array.isArray(data) ? data : []).map((c: any) => ({ id: c.id, name: c.name })))
-      } catch {}
-    })()
   }, [fetchGraph])
 
-  const onConnect = useCallback((c: Connection) => setEdges((eds) => addEdge(c, eds)), [setEdges])
-  const onNodeClick = useCallback((_: any, n: Node) => { setSelectedNode(n); setSelectedEdge(null) }, [])
-  const onEdgeClick = useCallback((_: any, e: Edge) => { setSelectedEdge(e); setSelectedNode(null) }, [])
-  const onPaneClick = useCallback(() => { setSelectedNode(null); setSelectedEdge(null) }, [])
+  const onConnect = useCallback(
+    (c: Connection) => setEdges((eds) => addEdge(c, eds)),
+    [setEdges]
+  )
 
-  const filtered = useMemo(() => {
-    const q = filter.trim().toLowerCase()
-    let keptNodes = nodes
-    let keptEdges = edges
-    if (q) {
-      const keepNode = new Set(nodes.filter((n) => String(n.data?.label || '').toLowerCase().includes(q)).map((n) => n.id))
-      keptNodes = nodes.filter((n) => keepNode.has(n.id))
-      keptEdges = edges.filter((e) => keepNode.has(e.source) || keepNode.has(e.target))
-    }
-    if (typeFilter !== 'all') {
-      keptEdges = keptEdges.filter((e) => String(e.data?.label || e.label || '') === typeFilter)
-      const connected = new Set<string>()
-      keptEdges.forEach((e) => { connected.add(e.source); connected.add(e.target) })
-      keptNodes = keptNodes.filter((n) => connected.has(n.id))
-    }
-    return { nodes: keptNodes, edges: keptEdges }
-  }, [filter, typeFilter, nodes, edges])
+  const onNodeClick = useCallback(
+    (_: any, n: Node<Person>) => {
+      setSelectedNode(n)
+      setSelectedEdge(null)
+    },
+    []
+  )
+
+  const onEdgeClick = useCallback(
+    (_: any, e: Edge) => {
+      setSelectedEdge(e)
+      setSelectedNode(null)
+    },
+    []
+  )
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null)
+    setSelectedEdge(null)
+  }, [])
+
+  // 레이아웃 토글
+  const toggleLayout = useCallback(() => {
+    const newDirection = layoutDirection === 'TB' ? 'LR' : 'TB'
+    setLayoutDirection(newDirection)
+
+    // 현재 노드에 새 레이아웃 적용
+    const layouted = applyDagreLayout(nodes, edges, {
+      direction: newDirection,
+      nodeWidth: 180,
+      nodeHeight: 100,
+    })
+
+    setNodes(layouted)
+    setTimeout(() => {
+      reactFlowInstance.fitView({ padding: 0.2, duration: 400 })
+    }, 50)
+  }, [layoutDirection, nodes, edges, setNodes, reactFlowInstance])
+
+  // FitView 버튼
+  const handleFitView = useCallback(() => {
+    reactFlowInstance.fitView({ padding: 0.2, duration: 400 })
+  }, [reactFlowInstance])
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6 md:p-10">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-4 flex items-center gap-3">
-          <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/')}>홈으로</Button>
-          <h1 className="text-2xl font-bold text-gray-900">관계 그래프</h1>
-          <button className="ml-auto px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md border" onClick={fetchGraph}>새로고침</button>
-          <button className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md border" onClick={() => setShowAdd(true)}>관계 추가</button>
-          {selectedEdge && (
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+      <div className="max-w-[1800px] mx-auto">
+        {/* 상단 헤더 */}
+        <div className="mb-4 flex items-center gap-3 flex-wrap">
+          <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/')}>
+            ← 홈으로
+          </Button>
+          <h1 className="text-2xl font-bold text-gray-900">인물 관계도</h1>
+
+          <div className="ml-auto flex items-center gap-2 flex-wrap">
             <button
-              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md border"
-              onClick={async () => {
-                try {
-                  const id = String(selectedEdge.id)
-                  await fetch(`${API}/relationships/${id}`, { method: 'DELETE' })
-                  setSelectedEdge(null)
-                  await fetchGraph()
-                } catch (e) {
-                  setError('삭제 실패')
-                }
-              }}
+              className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border shadow-sm transition-colors text-sm font-medium"
+              onClick={toggleLayout}
+              title="레이아웃 전환"
             >
-              선택 관계 삭제
+              {layoutDirection === 'TB' ? '수평 ↔' : '수직 ↕'}
             </button>
-          )}
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="이름 검색"
-          />
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-md"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-          >
-            <option value="all">모든 관계</option>
-            {relationTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+
+            <button
+              className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border shadow-sm transition-colors text-sm font-medium"
+              onClick={handleFitView}
+              title="전체 보기"
+            >
+              전체 보기
+            </button>
+
+            <button
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors text-sm font-medium"
+              onClick={fetchGraph}
+            >
+              새로고침
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -195,134 +247,142 @@ export default function GraphPage() {
 
         {loading ? (
           <div className="py-20 flex justify-center">
-            <LoadingSpinner size="lg" message="그래프를 불러오는 중..." />
+            <LoadingSpinner size="lg" message="관계도를 불러오는 중..." />
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-              <div className="lg:col-span-4 lg:order-1" style={{ height: '80vh', background: 'white', borderRadius: 12, overflow: 'hidden' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            {/* 메인 그래프 영역 */}
+            <div className="lg:col-span-3" style={{ height: '85vh' }}>
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full border border-gray-200">
                 <ReactFlow
-                  nodes={filtered.nodes}
-                  edges={filtered.edges}
+                  nodes={nodes}
+                  edges={edges}
                   onNodesChange={onNodesChange}
                   onEdgesChange={onEdgesChange}
                   onConnect={onConnect}
                   onNodeClick={onNodeClick}
                   onEdgeClick={onEdgeClick}
                   onPaneClick={onPaneClick}
+                  nodeTypes={nodeTypes}
                   fitView
+                  minZoom={0.1}
+                  maxZoom={2}
+                  defaultEdgeOptions={{
+                    type: 'smoothstep',
+                  }}
                 >
-                  <Background />
-                  <Controls />
+                  <Background color="#e5e7eb" gap={16} size={1} />
+                  <Controls className="!shadow-lg !border !border-gray-200" />
+                  <MiniMap
+                    nodeColor={(node) => {
+                      return '#c7d2fe' // indigo-200
+                    }}
+                    maskColor="rgba(0, 0, 0, 0.1)"
+                    className="!border !border-gray-200 !shadow-lg"
+                  />
+
+                  {/* 범례 패널 */}
+                  <Panel position="top-right" className="bg-transparent">
+                    <Legend />
+                  </Panel>
                 </ReactFlow>
               </div>
-              <aside className={`lg:col-span-1 lg:order-2 bg-white rounded-lg shadow p-4 h-[80vh] overflow-auto ${sidebarOpen ? '' : 'hidden lg:block lg:col-span-1'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-lg font-semibold">정보 패널</h2>
-                  <button className="text-sm px-2 py-1 rounded bg-gray-700 hover:bg-gray-800 text-white" onClick={() => setSidebarOpen(!sidebarOpen)}>
-                    {sidebarOpen ? '접기' : '펼치기'}
-                  </button>
-                </div>
-                {!selectedNode && !selectedEdge && (
-                  <p className="text-sm text-gray-500">노드 또는 엣지를 클릭하면 상세 정보를 표시합니다.</p>
-                )}
-                {selectedNode && (
-                  <div>
-                    <h2 className="text-lg font-semibold mb-2">노드 정보</h2>
-                    <div className="text-sm text-gray-700">
-                      <div><strong>ID:</strong> {selectedNode.id}</div>
-                      <div><strong>Label:</strong> {String((selectedNode.data as any)?.label || '')}</div>
-                    </div>
-                  </div>
-                )}
-                {selectedEdge && (
-                  <div>
-                    <h2 className="text-lg font-semibold mb-2">엣지 정보</h2>
-                    <div className="text-sm text-gray-700 space-y-1">
-                      <div><strong>ID:</strong> {selectedEdge.id}</div>
-                      <div><strong>Source:</strong> {selectedEdge.source}</div>
-                      <div><strong>Target:</strong> {selectedEdge.target}</div>
-                      <div><strong>Label:</strong> {String(selectedEdge.label || '')}</div>
-                      <div><strong>Closeness:</strong> {String((selectedEdge.data as any)?.closeness ?? '')}</div>
-                    </div>
-                  </div>
-                )}
-              </aside>
             </div>
 
-            {showAdd && (
-              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-                <div className="bg-white rounded-lg p-5 w-[520px] max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
-                  <h2 className="text-lg font-semibold mb-4">관계 추가</h2>
+            {/* 사이드 패널 */}
+            <aside className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-lg p-5 border border-gray-200 sticky top-4">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-indigo-600 rounded-full"></span>
+                  상세 정보
+                </h2>
+
+                {!selectedNode && !selectedEdge && (
+                  <p className="text-sm text-gray-500">
+                    노드 또는 관계선을 클릭하면 상세 정보를 표시합니다.
+                  </p>
+                )}
+
+                {selectedNode && (
                   <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm mb-1">출발 캐릭터</label>
-                      <select className="w-full border rounded px-3 py-2" value={newRel.fromCharacterId} onChange={(e) => setNewRel({ ...newRel, fromCharacterId: e.target.value })}>
-                        <option value="">선택</option>
-                        {characters.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
+                    <div className="pb-3 border-b border-gray-200">
+                      <div className="text-2xl font-bold text-gray-900 mb-1">
+                        {selectedNode.data.name}
+                      </div>
+                      {selectedNode.data.title && (
+                        <div className="text-sm text-gray-600">{selectedNode.data.title}</div>
+                      )}
+                      {selectedNode.data.age && (
+                        <div className="text-sm text-gray-500">{selectedNode.data.age}세</div>
+                      )}
                     </div>
-                    <div>
-                      <label className="block text-sm mb-1">도착 캐릭터</label>
-                      <select className="w-full border rounded px-3 py-2" value={newRel.toCharacterId} onChange={(e) => setNewRel({ ...newRel, toCharacterId: e.target.value })}>
-                        <option value="">선택</option>
-                        {characters.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm mb-1">관계 유형</label>
-                      <input className="w-full border rounded px-3 py-2" value={newRel.relationType} onChange={(e) => setNewRel({ ...newRel, relationType: e.target.value })} placeholder="e.g. friend, rival, family" />
-                    </div>
-                    <div>
-                      <label className="block text-sm mb-1">친밀도: {newRel.closeness}</label>
-                      <input type="range" min={0} max={10} step={0.1} className="w-full" value={newRel.closeness} onChange={(e) => setNewRel({ ...newRel, closeness: Number(e.target.value) })} />
-                    </div>
-                    <div>
-                      <label className="block text-sm mb-1">설명</label>
-                      <textarea className="w-full border rounded px-3 py-2" rows={3} value={newRel.description} onChange={(e) => setNewRel({ ...newRel, description: e.target.value })} />
+
+                    {selectedNode.data.description && (
+                      <div>
+                        <div className="text-xs font-semibold text-gray-700 mb-1">설명</div>
+                        <div className="text-sm text-gray-600">{selectedNode.data.description}</div>
+                      </div>
+                    )}
+
+                    {selectedNode.data.family && (
+                      <div>
+                        <div className="text-xs font-semibold text-gray-700 mb-1">가족</div>
+                        <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-indigo-50 text-indigo-700">
+                          {selectedNode.data.family}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="pt-3 border-t border-gray-200">
+                      <div className="text-xs text-gray-400">ID: {selectedNode.id}</div>
                     </div>
                   </div>
-                  <div className="mt-4 flex justify-end gap-2">
-                    <button className="px-3 py-2 rounded border" onClick={() => setShowAdd(false)}>취소</button>
-                    <button
-                      className="px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
-                      onClick={async () => {
-                        if (!newRel.fromCharacterId || !newRel.toCharacterId) return
-                        try {
-                          const body = {
-                            fromCharacter: { id: Number(newRel.fromCharacterId) },
-                            toCharacter: { id: Number(newRel.toCharacterId) },
-                            relationType: newRel.relationType,
-                            closeness: newRel.closeness,
-                            description: newRel.description,
-                          }
-                          await fetch(`${API}/relationships`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(body),
-                          })
-                          setShowAdd(false)
-                          setNewRel({ fromCharacterId: '', toCharacterId: '', relationType: 'friend', closeness: 5, description: '' })
-                          await fetchGraph()
-                        } catch (e) {
-                          setError('관계 추가 실패')
-                        }
-                      }}
-                    >
-                      생성
-                    </button>
+                )}
+
+                {selectedEdge && (
+                  <div className="space-y-3">
+                    <div className="pb-3 border-b border-gray-200">
+                      <div className="text-lg font-bold text-gray-900 mb-2">관계 정보</div>
+                      <div className="text-sm text-gray-600">{selectedEdge.label}</div>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">출발:</span>
+                        <span className="font-medium text-gray-900">{selectedEdge.source}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">도착:</span>
+                        <span className="font-medium text-gray-900">{selectedEdge.target}</span>
+                      </div>
+                      {(selectedEdge.data as any)?.closeness && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">친밀도:</span>
+                          <span className="font-medium text-gray-900">
+                            {(selectedEdge.data as any).closeness}/10
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-200">
+                      <div className="text-xs text-gray-400">ID: {selectedEdge.id}</div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
-            )}
-          </>
+            </aside>
+          </div>
         )}
       </div>
     </main>
   )
 }
 
+export default function GraphPage() {
+  return (
+    <ReactFlowProvider>
+      <GraphPageContent />
+    </ReactFlowProvider>
+  )
+}
