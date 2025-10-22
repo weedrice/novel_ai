@@ -27,11 +27,11 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import ErrorMessage from '@/components/ErrorMessage'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import Button from '@/components/Button'
-import PersonNode from '@/components/graph/PersonNode'
-import Legend from '@/components/graph/Legend'
-import { applyDagreLayout, LayoutDirection } from '@/components/graph/utils/layout'
-import { Person, Relation, RelationType, RELATION_COLORS } from '@/components/graph/types'
+import Button from '@/components/ui/Button'
+import PersonNode from '@/components/features/graph/PersonNode'
+import Legend from '@/components/features/graph/Legend'
+import { applyDagreLayout, LayoutDirection } from '@/components/features/graph/utils/layout'
+import { Person, Relation, RelationType, RELATION_COLORS } from '@/components/features/graph/types'
 
 const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
 

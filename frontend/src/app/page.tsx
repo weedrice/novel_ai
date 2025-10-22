@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Button from '@/components/Button'
+import Button from '@/components/ui/Button'
 import Card from '@/components/Card'
 import ErrorMessage from '@/components/ErrorMessage'
 import LoadingSpinner from '@/components/LoadingSpinner'
