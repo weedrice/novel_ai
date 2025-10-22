@@ -1,31 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl:*)",
-      "Bash(tree:*)",
-      "Bash(test:*)",
-      "Bash(./gradlew:*)",
-      "Bash(java:*)",
-      "Bash(set JAVA_HOME=)",
-      "Bash(where:*)",
-      "Bash(set PATH=%PATH%)",
-      "Bash(C:Program FilesEclipse Adoptiumjdk-17.0.16.8-hotspotbin)",
-      "Bash(gradlew.bat clean build:*)",
-      "Bash(cmd.exe /c \"set JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.16.8-hotspot && gradlew.bat clean build --no-daemon\")",
-      "Bash(export JAVA_HOME=\"/mnt/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot\")",
-      "Bash(unset:*)",
-      "Bash(python:*)",
-      "Bash(npm install)",
-      "Bash(npm run dev:*)",
-      "Bash(netstat:*)",
-      "Bash(findstr:*)",
-      "Bash(taskkill //F //PID 21720)",
+      "Bash(powershell -Command \"Move-Item graph features\\ -Force\")",
+      "Bash(powershell:*)",
+      "Bash(npm run build:*)",
       "Bash(npm install:*)",
-      "Bash(mkdir:*)",
-      "Bash(taskkill //F //PID 19024)",
-      "Bash(taskkill //F //PID 18588)",
+      "Bash(tree:*)",
+      "Bash(dir:*)",
+      "Bash(./gradlew compileJava:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Phase 3 LLM 통합 - 말투 프로필링 및 프롬프트 엔지니어링\n\n## Character 엔티티 확장\n- examples (TEXT): 실제 대사 예시 추가 (Few-shot 학습용)\n- prohibitedWords (VARCHAR 1000): 사용하지 않는 단어 목록\n- sentencePatterns (TEXT): 문장 패턴 예시\n\n## 초기 데이터 업데이트 (data.sql)\n- 세하, 지호, 미나 각각의 실제 대사 예시 추가\n- 캐릭터별 금지 단어 정의\n- 캐릭터별 문장 패턴 추가\n\n## LLM 서버 구현\n### 의존성 추가\n- openai>=1.12.0\n- python-dotenv>=1.0.0\n\n### 환경 설정\n- .env.example 생성 (OpenAI API 키 설정 가이드)\n\n### PromptBuilder 서비스 (app/services/prompt_builder.py)\n- build_system_prompt(): 캐릭터 페르소나 프롬프트 생성\n- build_user_prompt(): 대사 생성 요청 프롬프트\n- build_full_prompt(): 전체 프롬프트 조합\n- 캐릭터 정보, 말투, 예시, 금지 단어, 문장 패턴 모두 반영\n\n### LLMService (app/services/llm_service.py)\n- OpenAI API 연동\n- Fallback 처리 (API 키 없을 시 더미 응답)\n- 에러 핸들링 및 로깅\n- 응답 파싱 및 정제 (번호, 기호 제거)\n\n### main.py 업데이트\n- CharacterInfo 모델 추가\n- SuggestInput 확장 (characterInfo, targetNames, context)\n- 실제 LLM 호출 로직 구현\n- 버전 0.2.0으로 업데이트\n\n## 다음 단계\n- API 서버에서 캐릭터 정보를 LLM 서버로 전달\n- 멀티 LLM 지원 (GPT, Claude, Gemini 선택 기능)\n- 통합 테스트\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git --version:*)"
     ],
     "deny": [],
     "ask": []
