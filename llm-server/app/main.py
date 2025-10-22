@@ -4,8 +4,8 @@ from typing import List, Optional
 from dotenv import load_dotenv
 import logging
 
-from app.services.prompt_builder import PromptBuilder
-from app.services.llm_service import LLMService
+from services.prompt_builder import PromptBuilder
+from services.llm_service import LLMService
 
 # Load environment variables
 load_dotenv()

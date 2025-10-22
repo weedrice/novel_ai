@@ -112,7 +112,12 @@ class LLMService:
             return self._generate_fallback_dialogues(n_candidates)
 
         try:
-            logger.info(f"Calling OpenAI API with model={self.openai_model}, n_candidates={n_candidates}")
+            logger.info(f"Calling OpenAI API: model={self.openai_model}, n_candidates={n_candidates}, "
+                       f"max_tokens={max_tokens or self.openai_max_tokens}, "
+                       f"temperature={temperature or self.openai_temperature}")
+            logger.debug(f"System prompt length: {len(system_prompt)} chars")
+            logger.debug(f"User prompt length: {len(user_prompt)} chars")
+
             response = self.openai_client.chat.completions.create(
                 model=self.openai_model,
                 messages=[
@@ -124,22 +129,24 @@ class LLMService:
                 n=n_candidates
             )
 
+            logger.debug(f"OpenAI API response received: {len(response.choices)} choices")
+
             # 여러 후보가 있으면 모두 수집
             dialogues = []
-            for choice in response.choices:
+            for idx, choice in enumerate(response.choices):
                 content = choice.message.content.strip()
-                logger.debug(f"OpenAI response choice: {content[:100]}...")
+                logger.debug(f"OpenAI choice {idx}: {content[:100]}...")
                 parsed = self._parse_dialogues(content, 1)
                 dialogues.extend(parsed)
 
-            logger.info(f"OpenAI generated {len(dialogues)} dialogues")
+            logger.info(f"OpenAI generated {len(dialogues)} dialogues from {len(response.choices)} choices")
             return dialogues[:n_candidates] if dialogues else self._generate_fallback_dialogues(n_candidates)
 
         except OpenAIError as e:
-            logger.error(f"OpenAI API error: {e}")
+            logger.error(f"OpenAI API error: {e}", exc_info=True)
             return self._generate_fallback_dialogues(n_candidates)
         except Exception as e:
-            logger.error(f"Unexpected error with OpenAI: {e}")
+            logger.error(f"Unexpected error with OpenAI: {e}", exc_info=True)
             return self._generate_fallback_dialogues(n_candidates)
 
     def _generate_with_claude(
@@ -162,7 +169,12 @@ class LLMService:
             else:
                 modified_prompt = user_prompt
 
-            logger.info(f"Calling Claude API with model={self.anthropic_model}, n_candidates={n_candidates}")
+            logger.info(f"Calling Claude API: model={self.anthropic_model}, n_candidates={n_candidates}, "
+                       f"max_tokens={max_tokens or self.anthropic_max_tokens}, "
+                       f"temperature={temperature or self.anthropic_temperature}")
+            logger.debug(f"System prompt length: {len(system_prompt)} chars")
+            logger.debug(f"User prompt length: {len(modified_prompt)} chars")
+
             message = self.anthropic_client.messages.create(
                 model=self.anthropic_model,
                 max_tokens=max_tokens or self.anthropic_max_tokens,
@@ -174,16 +186,17 @@ class LLMService:
             )
 
             content = message.content[0].text.strip()
-            logger.debug(f"Claude response: {content[:100]}...")
+            logger.debug(f"Claude response length: {len(content)} chars")
+            logger.debug(f"Claude response preview: {content[:100]}...")
             dialogues = self._parse_dialogues(content, n_candidates)
             logger.info(f"Claude generated {len(dialogues)} dialogues")
             return dialogues
 
         except anthropic.APIError as e:
-            logger.error(f"Anthropic API error: {e}")
+            logger.error(f"Anthropic API error: {e}", exc_info=True)
             return self._generate_fallback_dialogues(n_candidates)
         except Exception as e:
-            logger.error(f"Unexpected error with Claude: {e}")
+            logger.error(f"Unexpected error with Claude: {e}", exc_info=True)
             return self._generate_fallback_dialogues(n_candidates)
 
     def _generate_with_gemini(
@@ -207,7 +220,10 @@ class LLMService:
             else:
                 full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
-            logger.info(f"Calling Gemini API with model={self.gemini_model}, n_candidates={n_candidates}")
+            logger.info(f"Calling Gemini API: model={self.gemini_model}, n_candidates={n_candidates}, "
+                       f"max_tokens={max_tokens or self.gemini_max_tokens}, "
+                       f"temperature={temperature or self.gemini_temperature}")
+            logger.debug(f"Full prompt length: {len(full_prompt)} chars")
 
             generation_config = genai.GenerationConfig(
                 temperature=temperature or self.gemini_temperature,
@@ -228,20 +244,21 @@ class LLMService:
 
             # 첫 번째 candidate의 텍스트 추출
             content = response.text.strip()
-            logger.debug(f"Gemini response: {content[:100]}...")
+            logger.debug(f"Gemini response length: {len(content)} chars")
+            logger.debug(f"Gemini response preview: {content[:100]}...")
 
             dialogues = self._parse_dialogues(content, n_candidates)
             logger.info(f"Gemini generated {len(dialogues)} dialogues")
             return dialogues
 
         except google_exceptions.GoogleAPIError as e:
-            logger.error(f"Google API error: {e}")
+            logger.error(f"Google API error: {e}", exc_info=True)
             return self._generate_fallback_dialogues(n_candidates)
         except google_exceptions.InvalidArgument as e:
-            logger.error(f"Invalid argument to Gemini API: {e}")
+            logger.error(f"Invalid argument to Gemini API: {e}", exc_info=True)
             return self._generate_fallback_dialogues(n_candidates)
         except ValueError as e:
-            logger.error(f"Gemini response blocked or invalid: {e}")
+            logger.error(f"Gemini response blocked or invalid: {e}", exc_info=True)
             return self._generate_fallback_dialogues(n_candidates)
         except Exception as e:
             logger.error(f"Unexpected error with Gemini: {e}", exc_info=True)
@@ -258,21 +275,31 @@ class LLMService:
         Returns:
             파싱된 대사 목록
         """
+        logger.debug(f"Parsing dialogues: content_length={len(content)}, n_candidates={n_candidates}")
+
         # 줄바꿈으로 구분된 대사들을 분리
         dialogues = [line.strip() for line in content.split('\n') if line.strip()]
+        logger.debug(f"Split into {len(dialogues)} lines")
 
         # 번호나 기호 제거
         cleaned_dialogues = []
-        for dialogue in dialogues:
+        for idx, dialogue in enumerate(dialogues):
             # 숫자, 점, 대시, 불릿 포인트 제거
             cleaned = re.sub(r'^\d+[\.\)]\s*', '', dialogue)  # "1. " or "1) "
             cleaned = re.sub(r'^[-•\*]\s*', '', cleaned)      # "- " or "• " or "* "
             cleaned = re.sub(r'^["\']|["\']$', '', cleaned)    # 앞뒤 따옴표 제거
             if cleaned:
                 cleaned_dialogues.append(cleaned)
+                logger.debug(f"Cleaned dialogue {idx}: {cleaned[:50]}...")
+
+        logger.info(f"Parsed {len(cleaned_dialogues)} dialogues from {len(dialogues)} lines")
 
         # 요청한 개수만큼 반환 (부족하면 있는 만큼)
-        return cleaned_dialogues[:n_candidates] if cleaned_dialogues else self._generate_fallback_dialogues(n_candidates)
+        if not cleaned_dialogues:
+            logger.warning("No dialogues parsed, using fallback")
+            return self._generate_fallback_dialogues(n_candidates)
+
+        return cleaned_dialogues[:n_candidates]
 
     def _generate_fallback_dialogues(self, n_candidates: int) -> List[str]:
         """

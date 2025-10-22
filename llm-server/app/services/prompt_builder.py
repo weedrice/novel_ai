@@ -4,6 +4,9 @@ Builds system and user prompts from character info and request context.
 """
 
 from typing import Dict, List, Optional, Tuple
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PromptBuilder:
@@ -22,6 +25,8 @@ class PromptBuilder:
         Returns:
             System prompt string
         """
+        logger.debug(f"Building system prompt for character: {character_info.get('name', 'Unknown')}")
+
         name = character_info.get("name", "Character")
         description = character_info.get("description", "")
         personality = character_info.get("personality", "")
@@ -78,7 +83,9 @@ You are an AI that generates short, natural-sounding dialogue lines for the char
 6. Respect the requested honorific style.
 """
 
-        return prompt.strip()
+        result = prompt.strip()
+        logger.debug(f"System prompt built: {len(result)} chars")
+        return result
 
     @staticmethod
     def build_user_prompt(
@@ -103,6 +110,9 @@ You are an AI that generates short, natural-sounding dialogue lines for the char
         Returns:
             User prompt string
         """
+        logger.debug(f"Building user prompt: intent={intent}, honorific={honorific}, "
+                    f"targets={target_names}, max_len={max_len}, n_candidates={n_candidates}")
+
         target_str = ", ".join(target_names) if target_names else "unknown"
 
         prompt = f"""
@@ -130,7 +140,9 @@ I missed you a lot.
 Now generate the candidates:
 """
 
-        return prompt.strip()
+        result = prompt.strip()
+        logger.debug(f"User prompt built: {len(result)} chars")
+        return result
 
     @staticmethod
     def build_full_prompt(
@@ -148,6 +160,9 @@ Now generate the candidates:
         Returns:
             Tuple of (system_prompt, user_prompt)
         """
+        logger.info(f"Building full prompt: character={character_info.get('name', 'Unknown')}, "
+                   f"intent={intent}, honorific={honorific}")
+
         system_prompt = PromptBuilder.build_system_prompt(character_info)
         user_prompt = PromptBuilder.build_user_prompt(
             intent=intent,
@@ -158,5 +173,6 @@ Now generate the candidates:
             context=context,
         )
 
+        logger.info(f"Full prompt built: system={len(system_prompt)} chars, user={len(user_prompt)} chars")
         return system_prompt, user_prompt
 
