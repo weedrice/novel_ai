@@ -37,17 +37,29 @@ public class LlmClient {
     }
 
     public Map<String, Object> suggest(SuggestRequest request) {
+        log.info("LLM suggestion request started: speakerId={}, intent={}, honorific={}, provider={}",
+                request.speakerId(), request.intent(), request.honorific(), request.provider());
+        log.debug("LLM suggestion details: targetIds={}, maxLen={}, nCandidates={}",
+                request.targetIds(), request.maxLen(), request.nCandidates());
+
         try {
             // 화자 캐릭터 정보 조회
+            log.debug("Fetching speaker character: {}", request.speakerId());
             Character speaker = characterRepository.findByCharacterId(request.speakerId())
-                    .orElseThrow(() -> new IllegalArgumentException("Speaker not found: " + request.speakerId()));
+                    .orElseThrow(() -> {
+                        log.error("Speaker character not found: {}", request.speakerId());
+                        return new IllegalArgumentException("Speaker not found: " + request.speakerId());
+                    });
+            log.debug("Found speaker character: id={}, name={}", speaker.getId(), speaker.getName());
 
             // 대상 캐릭터 이름 목록 조회
+            log.debug("Fetching target character names for: {}", request.targetIds());
             List<String> targetNames = request.targetIds().stream()
                     .map(targetId -> characterRepository.findByCharacterId(targetId)
                             .map(Character::getName)
                             .orElse(targetId))
                     .collect(Collectors.toList());
+            log.debug("Target character names: {}", targetNames);
 
             // 캐릭터 정보 DTO 생성
             CharacterInfoDto characterInfo = new CharacterInfoDto(
@@ -76,18 +88,26 @@ public class LlmClient {
                     request.provider()
             );
 
-            log.info("Sending request to LLM server: speaker={}, intent={}, provider={}",
-                    request.speakerId(), request.intent(), request.provider());
+            log.info("Calling LLM server: url={}/gen/suggest, speaker={}, intent={}, provider={}",
+                    llmBaseUrl, request.speakerId(), request.intent(), request.provider());
 
-            return getRestClient().post()
+            Map<String, Object> response = getRestClient().post()
                     .uri(llmBaseUrl + "/gen/suggest")
                     .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                     .body(llmRequest)
                     .retrieve()
                     .body(Map.class);
 
+            log.info("LLM server response received: candidates={}",
+                    response != null && response.containsKey("candidates") ?
+                    ((List<?>) response.get("candidates")).size() : 0);
+            log.debug("LLM response: {}", response);
+
+            return response;
+
         } catch (Exception e) {
             log.error("Failed to call LLM server: {}", e.getMessage(), e);
+            log.warn("Returning fallback dummy response for speaker: {}", request.speakerId());
             // LLM 서버가 없을 때 임시 더미 응답 반환
             return Map.of(
                 "candidates", List.of(
@@ -100,15 +120,28 @@ public class LlmClient {
     }
 
     public Map<String, Object> generateScenario(Map<String, Object> payload) {
+        log.info("Scenario generation request started");
+        log.debug("Scenario payload: {}", payload);
+
         try {
-            return getRestClient().post()
+            log.info("Calling LLM server for scenario: url={}/gen/scenario", llmBaseUrl);
+
+            Map<String, Object> response = getRestClient().post()
                     .uri(llmBaseUrl + "/gen/scenario")
                     .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                     .body(payload)
                     .retrieve()
                     .body(Map.class);
+
+            log.info("Scenario generated successfully: dialogues={}",
+                    response != null && response.containsKey("dialogues") ?
+                    ((List<?>) response.get("dialogues")).size() : 0);
+            log.debug("Scenario response: {}", response);
+
+            return response;
         } catch (Exception e) {
             log.error("Failed to call LLM server (scenario): {}", e.getMessage(), e);
+            log.warn("Returning fallback scenario response");
             return Map.of(
                     "dialogues", List.of(
                             Map.of("speaker", "A", "characterId", "unknown", "text", "Scenario fallback line 1", "order", 1),

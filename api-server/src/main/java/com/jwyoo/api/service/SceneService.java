@@ -35,7 +35,9 @@ public class SceneService {
      */
     public List<Scene> getAllScenes() {
         log.debug("Fetching all scenes");
-        return sceneRepository.findAll();
+        List<Scene> scenes = sceneRepository.findAll();
+        log.info("Fetched {} scenes", scenes.size());
+        return scenes;
     }
 
     /**
@@ -43,8 +45,14 @@ public class SceneService {
      */
     public Scene getSceneById(Long id) {
         log.debug("Fetching scene by id: {}", id);
-        return sceneRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("장면", id));
+        Scene scene = sceneRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("Scene not found with id: {}", id);
+                    return new ResourceNotFoundException("장면", id);
+                });
+        log.debug("Found scene: id={}, sceneNumber={}, location={}",
+            scene.getId(), scene.getSceneNumber(), scene.getLocation());
+        return scene;
     }
 
     /**
@@ -52,7 +60,9 @@ public class SceneService {
      */
     public List<Scene> getScenesByEpisodeId(Long episodeId) {
         log.debug("Fetching scenes by episode id: {}", episodeId);
-        return sceneRepository.findByEpisodeIdOrderBySceneNumberAsc(episodeId);
+        List<Scene> scenes = sceneRepository.findByEpisodeIdOrderBySceneNumberAsc(episodeId);
+        log.info("Found {} scenes for episode: {}", scenes.size(), episodeId);
+        return scenes;
     }
 
     /**
@@ -78,9 +88,10 @@ public class SceneService {
      */
     @Transactional
     public Scene createScene(Scene scene) {
-        log.info("Creating new scene for episode: {}", scene.getEpisode().getId());
+        log.info("Creating new scene: episodeId={}, sceneNumber={}, location={}",
+            scene.getEpisode().getId(), scene.getSceneNumber(), scene.getLocation());
         Scene saved = sceneRepository.save(scene);
-        log.info("Scene created successfully: {}", saved.getId());
+        log.info("Scene created successfully: id={}, sceneNumber={}", saved.getId(), saved.getSceneNumber());
         return saved;
     }
 
@@ -89,8 +100,12 @@ public class SceneService {
      */
     @Transactional
     public Scene updateScene(Long id, Scene scene) {
-        log.info("Updating scene: {}", id);
+        log.info("Updating scene: id={}, newSceneNumber={}, newLocation={}",
+            id, scene.getSceneNumber(), scene.getLocation());
         Scene existing = getSceneById(id);
+
+        Integer oldSceneNumber = existing.getSceneNumber();
+        String oldLocation = existing.getLocation();
 
         existing.setSceneNumber(scene.getSceneNumber());
         existing.setLocation(scene.getLocation());
@@ -99,7 +114,8 @@ public class SceneService {
         existing.setParticipants(scene.getParticipants());
 
         Scene updated = sceneRepository.save(existing);
-        log.info("Scene updated successfully: {}", id);
+        log.info("Scene updated: id={}, sceneNumber: {} -> {}, location: {} -> {}",
+            id, oldSceneNumber, updated.getSceneNumber(), oldLocation, updated.getLocation());
         return updated;
     }
 
@@ -108,14 +124,19 @@ public class SceneService {
      */
     @Transactional
     public void deleteScene(Long id) {
-        log.info("Deleting scene: {}", id);
+        log.info("Deleting scene: id={}", id);
 
         if (!sceneRepository.existsById(id)) {
+            log.error("Cannot delete - scene not found: id={}", id);
             throw new ResourceNotFoundException("장면", id);
         }
 
+        Scene scene = getSceneById(id);
+        log.info("Deleting scene: id={}, sceneNumber={}, location={}",
+            id, scene.getSceneNumber(), scene.getLocation());
+
         sceneRepository.deleteById(id);
-        log.info("Scene deleted successfully: {}", id);
+        log.info("Scene deleted successfully: id={}", id);
     }
 
     /**
@@ -123,15 +144,19 @@ public class SceneService {
      */
     @Transactional
     public Scene addDialogue(Long sceneId, Dialogue dialogue) {
-        log.info("Adding dialogue to scene: {}", sceneId);
+        log.info("Adding dialogue to scene: sceneId={}", sceneId);
         Scene scene = getSceneById(sceneId);
 
+        int newOrder = scene.getDialogues().size() + 1;
         dialogue.setScene(scene);
-        dialogue.setDialogueOrder(scene.getDialogues().size() + 1);
+        dialogue.setDialogueOrder(newOrder);
         scene.getDialogues().add(dialogue);
 
+        log.debug("Adding dialogue: sceneId={}, order={}, characterId={}",
+            sceneId, newOrder, dialogue.getCharacter() != null ? dialogue.getCharacter().getId() : "null");
+
         Scene updated = sceneRepository.save(scene);
-        log.info("Dialogue added successfully to scene: {}", sceneId);
+        log.info("Dialogue added successfully: sceneId={}, totalDialogues={}", sceneId, updated.getDialogues().size());
         return updated;
     }
 
@@ -141,6 +166,8 @@ public class SceneService {
     public List<Dialogue> getDialogues(Long sceneId) {
         log.debug("Fetching dialogues for scene: {}", sceneId);
         // Use DialogueRepository directly to ensure character is fetched
-        return dialogueRepository.findBySceneIdOrderByDialogueOrderAsc(sceneId);
+        List<Dialogue> dialogues = dialogueRepository.findBySceneIdOrderByDialogueOrderAsc(sceneId);
+        log.info("Found {} dialogues for scene: {}", dialogues.size(), sceneId);
+        return dialogues;
     }
 }
