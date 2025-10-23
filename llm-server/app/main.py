@@ -384,6 +384,208 @@ def _generate_fallback_scenario(inp: ScenarioInput) -> List[DialogueItem]:
     return dialogues
 
 
+class ScriptAnalysisInput(BaseModel):
+    content: str = Field(..., description="Script content to analyze")
+    formatHint: Optional[str] = Field(None, description="Format hint: novel, scenario, description")
+    provider: str = Field("openai", description="LLM provider")
+
+
+class ExtractedCharacter(BaseModel):
+    name: str
+    description: str = ""
+    personality: str = ""
+    speakingStyle: str = ""
+    dialogueExamples: List[str] = []
+
+
+class ExtractedDialogue(BaseModel):
+    characterName: str
+    text: str
+    sceneNumber: int = 1
+
+
+class ExtractedScene(BaseModel):
+    sceneNumber: int
+    location: str = ""
+    mood: str = ""
+    description: str = ""
+    participants: List[str] = []
+
+
+class ExtractedRelationship(BaseModel):
+    fromCharacter: str
+    toCharacter: str
+    relationType: str
+    closeness: float = 5.0
+    description: str = ""
+
+
+class ScriptAnalysisResponse(BaseModel):
+    characters: List[ExtractedCharacter]
+    dialogues: List[ExtractedDialogue]
+    scenes: List[ExtractedScene]
+    relationships: List[ExtractedRelationship]
+
+
+@app.post("/gen/analyze-script", response_model=ScriptAnalysisResponse)
+async def analyze_script(inp: ScriptAnalysisInput) -> ScriptAnalysisResponse:
+    """
+    Analyze script content and extract structured information.
+    Supports various formats: novels, scenarios, descriptions.
+    """
+    logger.info(
+        f"Analyzing script: length={len(inp.content)} chars, format={inp.formatHint}, provider={inp.provider}"
+    )
+
+    try:
+        system_prompt = _build_script_analysis_system_prompt()
+        user_prompt = _build_script_analysis_user_prompt(inp.content, inp.formatHint)
+
+        logger.info(
+            f"Analysis prompts: system={len(system_prompt)} chars, user={len(user_prompt)} chars"
+        )
+
+        # Request JSON-structured response from LLM
+        generated = llm_service.generate_dialogue(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=2000,
+            temperature=0.3,  # Lower temperature for more structured output
+            n_candidates=1,
+            provider=inp.provider,
+        )
+
+        if not generated or not generated[0]:
+            logger.warning("No analysis result, returning empty structure")
+            return _generate_empty_analysis()
+
+        # Parse LLM response
+        import json
+
+        response_text = generated[0].strip()
+        logger.info(f"Raw LLM response preview: {response_text[:500]}")
+
+        # Extract JSON from markdown code blocks if present
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+
+        analysis_data = json.loads(response_text)
+
+        # Convert to Pydantic models
+        characters = [ExtractedCharacter(**c) for c in analysis_data.get("characters", [])]
+        dialogues = [ExtractedDialogue(**d) for d in analysis_data.get("dialogues", [])]
+        scenes = [ExtractedScene(**s) for s in analysis_data.get("scenes", [])]
+        relationships = [ExtractedRelationship(**r) for r in analysis_data.get("relationships", [])]
+
+        logger.info(
+            f"Analysis complete: {len(characters)} characters, {len(dialogues)} dialogues, "
+            f"{len(scenes)} scenes, {len(relationships)} relationships"
+        )
+
+        return ScriptAnalysisResponse(
+            characters=characters,
+            dialogues=dialogues,
+            scenes=scenes,
+            relationships=relationships,
+        )
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse LLM JSON response: {e}")
+        logger.error(f"Response text: {response_text}")
+        return _generate_empty_analysis()
+    except Exception as e:
+        logger.error(f"Error analyzing script: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return _generate_empty_analysis()
+
+
+def _build_script_analysis_system_prompt() -> str:
+    return """
+You are an expert script analyzer for storytelling content (novels, scenarios, screenplays).
+
+Your task is to analyze the provided text and extract:
+1. **Characters**: All characters mentioned with their traits
+2. **Dialogues**: All spoken lines with speaker identification
+3. **Scenes**: Scene divisions with location and mood
+4. **Relationships**: Character relationships inferred from interactions
+
+## Output Format
+You MUST respond with ONLY valid JSON in this exact structure:
+
+{
+  "characters": [
+    {
+      "name": "Character name",
+      "description": "Brief description",
+      "personality": "Personality traits",
+      "speakingStyle": "How they speak (formal, casual, etc.)",
+      "dialogueExamples": ["Example line 1", "Example line 2"]
+    }
+  ],
+  "dialogues": [
+    {
+      "characterName": "Speaker name",
+      "text": "What they said",
+      "sceneNumber": 1
+    }
+  ],
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "location": "Where it happens",
+      "mood": "Mood/atmosphere",
+      "description": "What happens in this scene",
+      "participants": ["Character1", "Character2"]
+    }
+  ],
+  "relationships": [
+    {
+      "fromCharacter": "Character1",
+      "toCharacter": "Character2",
+      "relationType": "friend/rival/family/etc",
+      "closeness": 7.5,
+      "description": "Nature of their relationship"
+    }
+  ]
+}
+
+## Rules
+- Extract ALL characters, even if mentioned briefly
+- For novels with narrative text, extract dialogue from quotation marks
+- Infer scenes from context clues (location changes, time jumps)
+- Estimate closeness on a scale of 0-10 based on interactions
+- Use Korean for character names and content if the input is in Korean
+- Return ONLY the JSON, no additional explanation
+""".strip()
+
+
+def _build_script_analysis_user_prompt(content: str, format_hint: Optional[str]) -> str:
+    hint_text = f"Format hint: This appears to be a {format_hint}.\n" if format_hint else ""
+
+    return f"""
+{hint_text}
+Please analyze the following script and extract characters, dialogues, scenes, and relationships in JSON format.
+
+## Script Content:
+{content}
+
+Remember: Return ONLY valid JSON with the exact structure specified.
+""".strip()
+
+
+def _generate_empty_analysis() -> ScriptAnalysisResponse:
+    """Return empty analysis structure when LLM fails."""
+    return ScriptAnalysisResponse(
+        characters=[],
+        dialogues=[],
+        scenes=[],
+        relationships=[],
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
 

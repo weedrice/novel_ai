@@ -105,7 +105,7 @@ public class RelationshipService {
         Relationship relationship = getRelationshipById(id);
 
         String oldType = relationship.getRelationType();
-        Integer oldCloseness = relationship.getCloseness();
+        Double oldCloseness = relationship.getCloseness();
 
         relationship.setRelationType(updatedRelationship.getRelationType());
         relationship.setCloseness(updatedRelationship.getCloseness());

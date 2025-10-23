@@ -50,7 +50,7 @@ class LLMService:
 
         # Google Gemini 설정
         self.google_api_key = os.getenv("GOOGLE_API_KEY")
-        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-pro")
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
         self.gemini_temperature = float(os.getenv("GEMINI_TEMPERATURE", "0.8"))
         self.gemini_max_tokens = int(os.getenv("GEMINI_MAX_TOKENS", "150"))
 
@@ -231,18 +231,59 @@ class LLMService:
                 candidate_count=1,  # Gemini는 현재 candidate_count > 1 미지원, 프롬프트로 처리
             )
 
-            # Safety settings를 제거하고 기본값 사용 (차단 방지)
+            # Safety settings를 완화하여 차단 최소화
+            safety_settings = [
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "block_none"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "threshold": "block_none"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "block_none"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "block_none"
+                }
+            ]
+
             response = self.gemini_model_instance.generate_content(
                 full_prompt,
-                generation_config=generation_config
+                generation_config=generation_config,
+                safety_settings=safety_settings
             )
 
-            # 응답 처리
+            # 응답 처리 - finish_reason 확인
             if not response.candidates:
                 logger.warning("Gemini returned no candidates")
                 return self._generate_fallback_dialogues(n_candidates)
 
-            # 첫 번째 candidate의 텍스트 추출
+            candidate = response.candidates[0]
+            
+            # finish_reason 확인 (1=STOP이 정상 완료)
+            finish_reason = candidate.finish_reason
+            logger.debug(f"Gemini finish_reason: {finish_reason}")
+            
+            if finish_reason == 2:  # SAFETY
+                logger.warning("Gemini response blocked by safety filter")
+                logger.debug(f"Safety ratings: {candidate.safety_ratings}")
+                return self._generate_fallback_dialogues(n_candidates)
+            elif finish_reason == 3:  # RECITATION
+                logger.warning("Gemini response blocked due to recitation (copyright)")
+                return self._generate_fallback_dialogues(n_candidates)
+            elif finish_reason not in [0, 1]:  # 0=UNSPECIFIED, 1=STOP
+                logger.warning(f"Gemini response finished with unexpected reason: {finish_reason}")
+                return self._generate_fallback_dialogues(n_candidates)
+
+            # 정상적인 응답인 경우에만 텍스트 추출
+            if not candidate.content or not candidate.content.parts:
+                logger.warning("Gemini response has no content parts")
+                return self._generate_fallback_dialogues(n_candidates)
+                
             content = response.text.strip()
             logger.debug(f"Gemini response length: {len(content)} chars")
             logger.debug(f"Gemini response preview: {content[:100]}...")

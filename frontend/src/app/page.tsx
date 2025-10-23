@@ -65,7 +65,7 @@ export default function Home() {
           <p className="text-gray-600 text-lg">Character Dialogue Tone Assistant System</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <a href="/graph" className="block p-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-md transition-colors duration-200">
             <div className="text-xl font-semibold mb-2">캐릭터 관계 그래프</div>
             <p className="text-purple-100 text-sm">캐릭터 간 관계를 시각적으로 확인합니다.</p>
@@ -77,6 +77,10 @@ export default function Home() {
           <a href="/scenes" className="block p-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md transition-colors duration-200">
             <div className="text-xl font-semibold mb-2">시나리오 편집</div>
             <p className="text-emerald-100 text-sm">장면별 시나리오를 생성·편집합니다.</p>
+          </a>
+          <a href="/script-analyzer" className="block p-6 bg-pink-600 hover:bg-pink-700 text-white rounded-lg shadow-md transition-colors duration-200">
+            <div className="text-xl font-semibold mb-2">📝 스크립트 분석</div>
+            <p className="text-pink-100 text-sm">소설·시나리오에서 캐릭터와 관계를 추출합니다.</p>
           </a>
         </div>
 
