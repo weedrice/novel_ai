@@ -64,6 +64,13 @@ public class Script {
     private String provider;
 
     /**
+     * 프로젝트 (사용자별 데이터 분리)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
+
+    /**
      * 생성 일시
      */
     @Column(name = "created_at", nullable = false, updatable = false)

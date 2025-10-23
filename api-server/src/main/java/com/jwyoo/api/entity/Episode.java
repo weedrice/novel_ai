@@ -29,6 +29,13 @@ public class Episode {
     @Column(nullable = false)
     private Integer episodeOrder; // 에피소드 순서
 
+    /**
+     * 프로젝트 (사용자별 데이터 분리)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
+
     @OneToMany(mappedBy = "episode", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sceneNumber ASC")
     @Builder.Default
