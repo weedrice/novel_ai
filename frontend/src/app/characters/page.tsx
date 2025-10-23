@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-
-const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
+import apiClient from '@/lib/api'
 
 type Character = {
   id: number
@@ -32,9 +31,8 @@ export default function CharactersPage() {
   useEffect(() => {
     ;(async () => {
       try {
-        const res = await fetch(`${API}/characters`)
-        const data = await res.json()
-        setCharacters(Array.isArray(data) ? data : [])
+        const res = await apiClient.get('/characters')
+        setCharacters(Array.isArray(res.data) ? res.data : [])
       } catch (e) {
         setError('Failed to load characters')
       }
@@ -47,9 +45,8 @@ export default function CharactersPage() {
     setError(null)
     setSuccess(null)
     try {
-      const res = await fetch(`${API}/characters/${c.id}/speaking-profile`)
-      const data = await res.json()
-      setProfile(data as SpeakingProfile)
+      const res = await apiClient.get(`/characters/${c.id}/speaking-profile`)
+      setProfile(res.data as SpeakingProfile)
     } catch (e) {
       setError('Failed to load speaking profile')
     } finally {
@@ -63,14 +60,8 @@ export default function CharactersPage() {
     setError(null)
     setSuccess(null)
     try {
-      const res = await fetch(`${API}/characters/${selectedCharacter.id}/speaking-profile`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
-      })
-      if (!res.ok) throw new Error('Save failed')
-      const updated = await res.json()
-      setProfile(updated as SpeakingProfile)
+      const res = await apiClient.put(`/characters/${selectedCharacter.id}/speaking-profile`, profile)
+      setProfile(res.data as SpeakingProfile)
       setSuccess('Saved successfully')
     } catch (e) {
       setError('Failed to save speaking profile')

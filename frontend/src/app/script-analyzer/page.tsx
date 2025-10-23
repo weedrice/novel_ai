@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import apiClient from '@/lib/api';
 
 interface ExtractedCharacter {
   name: string;
@@ -60,26 +61,15 @@ export default function ScriptAnalyzer() {
     setAnalysis(null);
 
     try {
-      const response = await fetch('http://localhost:8080/scripts/upload-and-analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          content,
-          formatHint,
-          provider,
-        }),
+      const response = await apiClient.post('/scripts/upload-and-analyze', {
+        title,
+        content,
+        formatHint,
+        provider,
       });
 
-      if (!response.ok) {
-        throw new Error('분석에 실패했습니다.');
-      }
-
-      const data = await response.json();
-      setAnalysis(data.analysis);
-      console.log('Analysis result:', data);
+      setAnalysis(response.data.analysis);
+      console.log('Analysis result:', response.data);
     } catch (err: any) {
       console.error('Error analyzing script:', err);
       setError(err.message || '분석 중 오류가 발생했습니다.');

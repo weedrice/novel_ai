@@ -6,8 +6,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/Card';
 import ErrorMessage from '@/components/ErrorMessage';
 import LoadingSpinner from '@/components/LoadingSpinner';
-
-const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+import apiClient from '@/lib/api';
 
 interface Character {
   id: number;
@@ -90,9 +89,8 @@ export default function SceneEditPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API}/scenes/${sceneId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+      const response = await apiClient.get(`/scenes/${sceneId}`);
+      const data = response.data;
       setScene(data.scene);
       setParticipants(data.participants || []);
       if (data.participants.length > 0) {
@@ -107,10 +105,8 @@ export default function SceneEditPage() {
 
   const fetchDialogues = async () => {
     try {
-      const response = await fetch(`${API}/scenes/${sceneId}/dialogues`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      setDialogues(data);
+      const response = await apiClient.get(`/scenes/${sceneId}/dialogues`);
+      setDialogues(response.data);
     } catch (err: any) {
       console.error('Failed to fetch dialogues:', err);
     }
@@ -120,12 +116,10 @@ export default function SceneEditPage() {
     setGenerating(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${API}/scenes/${sceneId}/generate-scenario?provider=${provider}&dialogueCount=${dialogueCount}`,
-        { method: 'POST' }
+      const response = await apiClient.post(
+        `/scenes/${sceneId}/generate-scenario?provider=${provider}&dialogueCount=${dialogueCount}`
       );
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
 
       if (data.generatedDialogues) {
         setGeneratedDialogues(data.generatedDialogues);
@@ -213,21 +207,15 @@ export default function SceneEditPage() {
       const character = participants.find(p => p.characterId === newDialogue.characterId);
       if (!character) return;
 
-      const response = await fetch(`${API}/dialogue`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sceneId: Number(sceneId),
-          characterId: character.id,
-          text: newDialogue.text,
-          dialogueOrder: dialogues.length + 1,
-          intent: newDialogue.intent,
-          honorific: newDialogue.honorific,
-          emotion: newDialogue.emotion,
-        }),
+      await apiClient.post('/dialogue', {
+        sceneId: Number(sceneId),
+        characterId: character.id,
+        text: newDialogue.text,
+        dialogueOrder: dialogues.length + 1,
+        intent: newDialogue.intent,
+        honorific: newDialogue.honorific,
+        emotion: newDialogue.emotion,
       });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       // 성공 시 대사 목록 새로고침
       await fetchDialogues();
@@ -247,13 +235,7 @@ export default function SceneEditPage() {
   // 대사 수정
   const handleUpdateDialogue = async (dialogueId: number, updates: any) => {
     try {
-      const response = await fetch(`${API}/dialogue/${dialogueId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await apiClient.put(`/dialogue/${dialogueId}`, updates);
 
       // 성공 시 대사 목록 새로고침
       await fetchDialogues();
@@ -268,11 +250,7 @@ export default function SceneEditPage() {
     if (!confirm('정말 이 대사를 삭제하시겠습니까?')) return;
 
     try {
-      const response = await fetch(`${API}/dialogue/${dialogueId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await apiClient.delete(`/dialogue/${dialogueId}`);
 
       // 성공 시 대사 목록 새로고침
       await fetchDialogues();
@@ -292,13 +270,7 @@ export default function SceneEditPage() {
         generatedDialogues: generatedDialogues,
       });
 
-      const response = await fetch(`${API}/scenes/${sceneId}/scenarios`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content }),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await apiClient.post(`/scenes/${sceneId}/scenarios`, { title, content });
 
       alert('시나리오 버전이 저장되었습니다.');
       await fetchVersions();
@@ -310,10 +282,8 @@ export default function SceneEditPage() {
   // 버전 목록 조회
   const fetchVersions = async () => {
     try {
-      const response = await fetch(`${API}/scenes/${sceneId}/scenarios`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      setVersions(data);
+      const response = await apiClient.get(`/scenes/${sceneId}/scenarios`);
+      setVersions(response.data);
     } catch (err: any) {
       console.error('Failed to fetch versions:', err);
     }
@@ -322,9 +292,8 @@ export default function SceneEditPage() {
   // 버전 불러오기
   const handleLoadVersion = async (versionId: number) => {
     try {
-      const response = await fetch(`${API}/scenes/scenarios/${versionId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const version = await response.json();
+      const response = await apiClient.get(`/scenes/scenarios/${versionId}`);
+      const version = response.data;
 
       const content = JSON.parse(version.content);
       if (content.dialogues) setDialogues(content.dialogues);

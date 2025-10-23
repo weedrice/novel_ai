@@ -32,8 +32,7 @@ import PersonNode from '@/components/features/graph/PersonNode'
 import Legend from '@/components/features/graph/Legend'
 import { applyDagreLayout, LayoutDirection } from '@/components/features/graph/utils/layout'
 import { Person, Relation, RelationType, RELATION_COLORS } from '@/components/features/graph/types'
-
-const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
+import apiClient from '@/lib/api'
 
 // 노드 타입 등록
 const nodeTypes = {
@@ -67,9 +66,8 @@ function GraphPageContent() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API}/relationships/graph`, { cache: 'no-store' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
+      const res = await apiClient.get('/relationships/graph')
+      const data = res.data
 
       const rawNodes: GraphNode[] = Array.isArray(data?.nodes) ? data.nodes : []
       const rawEdges: GraphEdge[] = Array.isArray(data?.edges) ? data.edges : []

@@ -5,8 +5,7 @@ import Button from '@/components/ui/Button'
 import Card from '@/components/Card'
 import ErrorMessage from '@/components/ErrorMessage'
 import LoadingSpinner from '@/components/LoadingSpinner'
-
-const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
+import apiClient from '@/lib/api'
 
 export default function Home() {
   const [episodes, setEpisodes] = useState<any[]>([])
@@ -19,10 +18,8 @@ export default function Home() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`${API}/episodes`)
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      const data = await response.json()
-      setEpisodes(data)
+      const response = await apiClient.get('/episodes')
+      setEpisodes(response.data)
     } catch (err: any) {
       setError(`에피소드 불러오기 실패: ${err.message}`)
     } finally {
@@ -34,22 +31,16 @@ export default function Home() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`${API}/dialogue/suggest`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          speakerId: 'char.seha',
-          targetIds: ['char.jiho'],
-          intent: 'reconcile',
-          honorific: 'banmal',
-          maxLen: 80,
-          nCandidates: 3,
-          provider,
-        }),
+      const response = await apiClient.post('/dialogue/suggest', {
+        speakerId: 'char.seha',
+        targetIds: ['char.jiho'],
+        intent: 'reconcile',
+        honorific: 'banmal',
+        maxLen: 80,
+        nCandidates: 3,
+        provider,
       })
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      const data = await response.json()
-      setCandidates(data.candidates || [])
+      setCandidates(response.data.candidates || [])
     } catch (err: any) {
       setError(`대사 제안 실패: ${err.message}`)
     } finally {

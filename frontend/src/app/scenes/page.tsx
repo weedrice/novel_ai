@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Card from "@/components/Card";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ErrorMessage from "@/components/ErrorMessage";
-
-const API = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+import apiClient from "@/lib/api";
 
 type Episode = { id: number; title: string; description: string };
 type Scene = {
@@ -37,9 +36,8 @@ export default function ScenesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API}/episodes`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const res = await apiClient.get('/episodes');
+      const data = res.data;
       setEpisodes(Array.isArray(data) ? data : []);
       // 첫 번째 에피소드 자동 선택
       if (data?.length > 0) {
@@ -57,10 +55,8 @@ export default function ScenesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API}/scenes/episode/${episodeId}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setScenes(Array.isArray(data) ? data : []);
+      const res = await apiClient.get(`/scenes/episode/${episodeId}`);
+      setScenes(Array.isArray(res.data) ? res.data : []);
     } catch (e: any) {
       setError(`장면 불러오기 실패: ${e?.message || e}`);
     } finally {
