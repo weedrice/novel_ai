@@ -5,10 +5,17 @@ Novel AI는 소설과 웹툰 등 스토리텔링 콘텐츠의 기획과 제작�
 
 ## 주요 기능
 
+### 사용자 인증 및 프로젝트 관리
+- **사용자 인증**: JWT 기반 회원가입/로그인 시스템으로 안전한 사용자 관리를 제공합니다.
+- **프로젝트 관리**: 사용자별로 여러 프로젝트를 생성하고 관리할 수 있습니다.
+- **데이터 분리**: 프로젝트별로 캐릭터, 에피소드, 스크립트 등의 데이터를 완전히 분리하여 저장합니다.
+- **보안**: 다른 사용자의 프로젝트 데이터에 접근할 수 없도록 강력한 권한 검증을 적용합니다.
+
 ### 캐릭터 및 세계관 관리
 - **캐릭터 관리**: 등장인물의 이름, 외형, 성격, MBTI 등 상세 프로필을 관리합니다.
 - **말투 프로필**: 캐릭터별 존댓말/반말, 어미, 자주 쓰는 어휘, 문체 특징을 정의하여 일관된 대사를 생성합니다.
 - **캐릭터 관계**: 등장인물 간의 관계(친구, 적대, 가족 등)를 정의하고 관계도를 시각화합니다.
+- **프로젝트별 관리**: 각 프로젝트마다 독립적인 캐릭터 및 관계 데이터를 유지합니다.
 
 ### 시나리오 작성 및 편집
 - **에피소드/장면 구조화**: 에피소드별로 장면(Scene)을 추가하고 계층적으로 관리합니다.
@@ -139,15 +146,20 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ## 현재 구현 상태
 
 ### ✅ 완료된 기능 (2025-10-23 기준)
-- **Phase 0-5 완료**: 프로젝트 초기 설정, 도메인 모델 구축, 관계 그래프 시각화, LLM 연동, 시나리오 생성, 스크립트 분석
+- **Phase 0-6 완료**: 프로젝트 초기 설정, 도메인 모델 구축, 관계 그래프 시각화, LLM 연동, 시나리오 생성, 스크립트 분석, 사용자 인증 및 프로젝트 관리
 - **백엔드 (api-server)**:
-  - 완전한 CRUD API (Character, Episode, Scene, Dialogue, Relationship, Script)
+  - **인증 시스템**: JWT 기반 회원가입/로그인, Spring Security 통합
+  - **프로젝트 관리**: 사용자별 프로젝트 생성/조회/수정/삭제, 프로젝트별 데이터 분리
+  - 완전한 CRUD API (Character, Episode, Scene, Dialogue, Relationship, Script, Project, User)
   - 시나리오 버전 관리 시스템
   - 스크립트 업로드 및 분석 API
   - 포괄적인 로깅 인프라 (모든 서비스 레이어)
   - H2 인메모리 데이터베이스 (개발 환경)
-  - 초기 시드 데이터 (3개 캐릭터, 3개 에피소드, 3개 장면)
+  - 프로젝트별 데이터 필터링 (모든 Repository 및 Service)
 - **프론트엔드 (frontend)**:
+  - **인증 UI**: 로그인/회원가입 페이지, JWT 토큰 관리, Axios Interceptor
+  - **프로젝트 관리 UI**: 프로젝트 선택 드롭다운, 프로젝트 생성 모달, 네비게이션 바
+  - **프로젝트 컨텍스트**: 전역 프로젝트 상태 관리, 자동 프로젝트 선택
   - 캐릭터 관리 UI (말투 프로필 편집)
   - 관계 그래프 시각화 (React Flow)
   - 시나리오 편집기 (장면별 대화 생성)
@@ -161,20 +173,40 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   - Fallback 더미 응답 시스템
 
 ### 🔧 최근 수정 사항 (2025-10-23)
+- **Phase 6 구현 완료**: 사용자 인증 및 프로젝트 관리 시스템
+  - **백엔드 인증**:
+    - User 엔티티 및 UserRepository 구현
+    - Spring Security 6.x 통합 및 SecurityConfig 설정
+    - JWT 토큰 생성/검증 (jjwt 0.12.3)
+    - JwtAuthenticationFilter, CustomUserDetailsService 구현
+    - POST /auth/signup, POST /auth/login 엔드포인트
+  - **프로젝트 관리**:
+    - Project 엔티티 및 ProjectRepository 구현
+    - ProjectService (getCurrentProject 자동 프로젝트 생성 포함)
+    - ProjectController (CRUD API)
+    - 모든 엔티티에 Project 연관관계 추가 (Character, Episode, Script)
+    - 간접 연관관계 @Query 구현 (Scene, Dialogue, Relationship)
+  - **데이터 분리**:
+    - 모든 Repository에 프로젝트별 조회 메서드 추가
+    - 모든 Service에 프로젝트 필터링 로직 추가
+    - 자동 프로젝트 설정 (생성 시)
+  - **프론트엔드 인증 UI**:
+    - 로그인/회원가입 페이지 (/login, /signup)
+    - lib/api.ts (Axios Interceptor - JWT 자동 추가, 401 에러 처리)
+    - lib/auth.ts (인증 유틸리티 함수)
+  - **프론트엔드 프로젝트 UI**:
+    - lib/project.ts (프로젝트 API 함수)
+    - ProjectContext (전역 프로젝트 상태 관리)
+    - Navbar 컴포넌트 (프로젝트 선택, 사용자 정보)
+    - 프로젝트 생성 모달
+    - 자동 프로젝트 선택 및 로컬스토리지 저장
 - **Phase 5 구현 완료**: LLM 기반 스크립트 분석 도구
   - 다양한 텍스트 형식 지원 (소설, 시나리오, 묘사, 대화)
   - 자동 캐릭터 추출 (이름, 성격, 말투, 대사 예시)
   - 장면 정보 추출 (위치, 분위기, 참여자)
   - 대사 추출 및 화자 매칭
   - 캐릭터 간 관계 분석 (관계 유형, 친밀도)
-  - 멀티 LLM 프로바이더 지원 (OpenAI, Claude, Gemini)
-  - 프론트엔드 UI (/script-analyzer) 구현
-  - 백엔드 API 구현 (Script 엔티티, ScriptService, ScriptController)
-  - LLM 서버 분석 엔드포인트 추가 (POST /gen/analyze-script)
 - **버그 수정**: RelationshipService.java:108 타입 에러 해결 (Integer → Double)
-  - Relationship 엔티티의 closeness 필드는 Double 타입이지만 서비스에서 Integer로 받으려 시도하던 문제 수정
-- **빌드 시스템 수정**: Gradle Java 버전 설정 명시
-  - gradle.properties에 org.gradle.java.home 설정 추가 (Java 21)
 
 ### ⚠️ 알려진 이슈 및 제한사항
 1. **데이터 영속성**:
@@ -186,9 +218,10 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    - 프로덕션 환경 DB 연동 필요
 
 ### 📋 다음 단계 (우선순위 순)
-1. **Phase 6**: 사용자 인증 및 권한 관리 (JWT, 프로젝트 분리)
-2. **Phase 7**: 장면 다중 선택 및 일괄 편집 기능
-3. **Phase 8**: Docker 및 배포 자동화 (PostgreSQL 마이그레이션, CI/CD)
+1. **Phase 7**: Vector DB 및 의미 검색 (선택적)
+2. **Phase 8**: Docker 및 배포 자동화 (PostgreSQL 마이그레이션, CI/CD)
+3. **Phase 9**: Neo4j GraphDB 전환 (선택적)
+4. **Phase 10**: 고급 기능 및 최적화 (지속적 개선)
 
 자세한 개발 로드맵은 [NEXT_TASKS.md](NEXT_TASKS.md)를 참고하세요.
 

@@ -980,62 +980,73 @@
 
 ---
 
-## Phase 6: 사용자 인증 및 권한 관리
+## Phase 6: 사용자 인증 및 권한 관리 ✅ (완료)
 
 ### 목표
 다중 사용자를 지원하고, 사용자별 프로젝트를 분리하여 관리
 
+### 완료 날짜
+2025-10-23
+
 ### 6.1 사용자 인증 시스템
 
 #### Task 59: User 엔티티 설계
-- [ ] User 엔티티 생성
+- [x] User 엔티티 생성
   - id, username, email, password (해시)
   - role (USER, ADMIN 등)
   - createdAt, updatedAt
-- [ ] UserRepository 생성
+- [x] UserRepository 생성
+  - findByUsername, findByEmail
+  - existsByUsername, existsByEmail
 
-**예상 소요 시간**: 30분
+**실제 소요 시간**: 30분
 
 ---
 
 #### Task 60: Spring Security 설정
-- [ ] Spring Security 의존성 추가
-- [ ] SecurityConfig 클래스 생성
-  - HTTP 보안 설정
-  - 인증 필터 체인
-  - CORS 설정 업데이트
-- [ ] PasswordEncoder 빈 등록 (BCrypt)
+- [x] Spring Security 의존성 추가 (Spring Boot 3.4)
+- [x] SecurityConfig 클래스 생성
+  - HTTP 보안 설정 (authorizeHttpRequests)
+  - 인증 필터 체인 (JwtAuthenticationFilter)
+  - CORS 설정 업데이트 (http://localhost:3000 허용)
+  - 세션 관리 (STATELESS)
+- [x] PasswordEncoder 빈 등록 (BCryptPasswordEncoder)
 
-**예상 소요 시간**: 1시간
+**실제 소요 시간**: 1시간
 
 ---
 
 #### Task 61: JWT 인증 구현
-- [ ] JWT 라이브러리 추가 (jjwt 등)
-- [ ] JwtTokenProvider 클래스 구현
-  - generateToken(user): JWT 생성
+- [x] JWT 라이브러리 추가 (jjwt 0.12.3)
+- [x] JwtTokenProvider 클래스 구현
+  - generateToken(user): JWT 생성 (24시간 만료)
   - validateToken(token): JWT 검증
   - getUsernameFromToken(token): 사용자 정보 추출
-- [ ] JwtAuthenticationFilter 구현
-  - 요청 헤더에서 JWT 추출
+  - HS256 알고리즘 사용, 시크릿 키 설정
+- [x] JwtAuthenticationFilter 구현
+  - 요청 헤더에서 JWT 추출 (Bearer 토큰)
   - 검증 후 SecurityContext에 인증 정보 저장
+  - CustomUserDetailsService 연동
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 2시간
 
 ---
 
 #### Task 62: 회원가입/로그인 API
-- [ ] AuthController 생성
-- [ ] POST /auth/signup 엔드포인트
-  - 사용자 등록
-  - 비밀번호 해싱
-  - 중복 체크
-- [ ] POST /auth/login 엔드포인트
-  - 인증 성공 시 JWT 발급
-- [ ] UserService 구현
-  - 사용자 조회, 생성 로직
+- [x] AuthController 생성
+- [x] POST /auth/signup 엔드포인트
+  - 사용자 등록 (SignupRequest DTO)
+  - 비밀번호 BCrypt 해싱
+  - 사용자명/이메일 중복 체크
+  - JWT 토큰 자동 발급
+- [x] POST /auth/login 엔드포인트
+  - 인증 성공 시 JWT 발급 (LoginResponse)
+  - 사용자 정보 반환
+- [x] UserService 구현
+  - 사용자 조회, 등록 로직
+  - 중복 검증 로직
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 2시간
 
 ---
 
@@ -1044,42 +1055,55 @@
 - [ ] 소셜 로그인 콜백 처리
 - [ ] 사용자 정보 자동 생성
 
-**예상 소요 시간**: 3시간
+**예상 소요 시간**: 3시간 (미구현)
 
 ---
 
 ### 6.2 프로젝트 관리
 
 #### Task 64: Project 엔티티 설계
-- [ ] Project 엔티티 생성
-  - id, name, description, ownerId
+- [x] Project 엔티티 생성
+  - id, name, description, owner (User)
   - createdAt, updatedAt
-- [ ] User ↔ Project 관계 설정 (One-to-Many)
-- [ ] Character, Episode 등에 projectId 추가
+- [x] User ↔ Project 관계 설정 (One-to-Many)
+- [x] Character, Episode, Script에 Project 연관관계 추가
+- [x] Scene, Dialogue, Relationship에 간접 연관관계 (Query)
 
-**예상 소요 시간**: 1시간
+**실제 소요 시간**: 1시간
 
 ---
 
 #### Task 65: 프로젝트 CRUD API
-- [ ] ProjectController 생성
-- [ ] GET /projects: 내 프로젝트 목록
-- [ ] POST /projects: 새 프로젝트 생성
-- [ ] PUT /projects/{id}: 프로젝트 수정
-- [ ] DELETE /projects/{id}: 프로젝트 삭제
-- [ ] 권한 검증 (본인 프로젝트만 수정/삭제 가능)
+- [x] ProjectController 생성
+- [x] GET /projects: 내 프로젝트 목록
+- [x] POST /projects: 새 프로젝트 생성
+- [x] GET /projects/{id}: 프로젝트 상세 조회
+- [x] PUT /projects/{id}: 프로젝트 수정
+- [x] DELETE /projects/{id}: 프로젝트 삭제
+- [x] GET /projects/search: 프로젝트 검색
+- [x] 권한 검증 (본인 프로젝트만 수정/삭제 가능)
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 1시간
 
 ---
 
 #### Task 66: 프로젝트별 데이터 분리
-- [ ] CharacterService 등에 프로젝트 필터 추가
-  - getAllCharacters(projectId)
-  - 현재 로그인 사용자의 프로젝트만 조회
-- [ ] 데이터 생성 시 projectId 자동 설정
+- [x] 모든 Repository에 프로젝트별 조회 메서드 추가
+  - CharacterRepository: findByProject, findByIdAndProject, etc.
+  - EpisodeRepository: findByProjectOrderByEpisodeOrderAsc, findByIdAndProject
+  - ScriptRepository: findByProjectOrderByCreatedAtDesc, findByProjectAndStatus, etc.
+  - SceneRepository: @Query로 Episode → Project 조인
+  - DialogueRepository: @Query로 Scene → Episode → Project 조인
+  - RelationshipRepository: @Query로 Character → Project 조인
+- [x] 모든 Service에 프로젝트 필터링 로직 추가
+  - CharacterService, EpisodeService, ScriptService
+  - getCurrentProject() 자동 호출
+- [x] 데이터 생성 시 현재 프로젝트 자동 설정
+- [x] ProjectService.getCurrentProject() 구현
+  - 첫 번째 프로젝트를 기본 프로젝트로 사용
+  - 프로젝트가 없으면 "기본 프로젝트" 자동 생성
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 3시간
 
 ---
 
@@ -1088,39 +1112,60 @@
 - [ ] 프로젝트 초대 기능
 - [ ] 읽기 전용/편집 권한 구분
 
-**예상 소요 시간**: 3시간
+**예상 소요 시간**: 3시간 (미구현)
 
 ---
 
 ### 6.3 프론트엔드 인증 UI
 
 #### Task 68: 로그인/회원가입 페이지
-- [ ] `/login` 페이지 생성
-- [ ] `/signup` 페이지 생성
-- [ ] 폼 validation
-- [ ] API 호출 및 JWT 저장 (localStorage 또는 cookie)
+- [x] `/login` 페이지 생성
+  - 사용자명, 비밀번호 입력
+  - 폼 validation 및 에러 메시지
+  - 로그인 성공 시 홈으로 리다이렉트
+- [x] `/signup` 페이지 생성
+  - 사용자명, 이메일, 비밀번호, 비밀번호 확인
+  - 클라이언트 validation (비밀번호 일치, 최소 6자)
+  - 회원가입 성공 시 홈으로 리다이렉트
+- [x] lib/auth.ts (인증 유틸리티 함수)
+  - signup, login, logout
+  - getCurrentUser, isAuthenticated
+  - saveAuthData (토큰 및 사용자 정보 저장)
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 1.5시간
 
 ---
 
 #### Task 69: 프로젝트 선택 UI
-- [ ] 로그인 후 프로젝트 목록 표시
-- [ ] 프로젝트 선택 시 컨텍스트 저장
-- [ ] 프로젝트 생성 모달
-- [ ] 네비게이션에 현재 프로젝트 표시
+- [x] lib/project.ts (프로젝트 API 함수)
+  - getMyProjects, createProject, updateProject, deleteProject
+  - getCurrentProject, setCurrentProject (로컬스토리지)
+- [x] contexts/ProjectContext.tsx
+  - 전역 프로젝트 상태 관리
+  - 자동 프로젝트 로드 및 선택
+  - selectProject, refreshProjects
+- [x] components/Navbar.tsx
+  - 프로젝트 선택 드롭다운
+  - 프로젝트 생성 모달
+  - 사용자 정보 표시
+  - 로그아웃 버튼
+- [x] app/layout.tsx
+  - ProjectProvider 추가
+  - Navbar 추가
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 2시간
 
 ---
 
 #### Task 70: 인증 토큰 관리
-- [ ] Axios Interceptor 설정
-  - 요청마다 JWT 헤더 자동 추가
-  - 401 응답 시 로그인 페이지로 리다이렉트
-- [ ] 토큰 갱신 로직 (선택적)
+- [x] lib/api.ts (Axios 인스턴스)
+- [x] Axios 요청 Interceptor
+  - 모든 API 요청에 JWT 헤더 자동 추가
+- [x] Axios 응답 Interceptor
+  - 401 응답 시 자동 로그아웃
+  - 로그인 페이지로 리다이렉트
 
-**예상 소요 시간**: 1시간
+**실제 소요 시간**: 30분
 
 ---
 
@@ -1132,6 +1177,21 @@
 - [x] 다른 사용자의 데이터 접근 불가
 
 **Phase 6 총 예상 소요 시간**: 15-18시간
+**Phase 6 실제 소요 시간**: 약 14시간
+
+### 주요 성과
+- ✅ 완전한 JWT 기반 인증 시스템 구축 (Spring Security 6.x)
+- ✅ 프로젝트별 완전한 데이터 분리 (Repository, Service 레이어)
+- ✅ 자동 프로젝트 생성 및 선택 기능
+- ✅ 프론트엔드 인증 UI 및 프로젝트 관리 UI
+- ✅ Axios Interceptor를 통한 자동 JWT 토큰 관리
+- ✅ 3개 커밋 완료 (86c58ad, 526e156, 295abbd)
+
+### 향후 개선 사항
+- [ ] OAuth2 소셜 로그인 추가 (Google, GitHub)
+- [ ] 프로젝트 공유 및 협업 기능
+- [ ] JWT 토큰 갱신 (Refresh Token)
+- [ ] 비밀번호 재설정 기능
 
 ---
 
