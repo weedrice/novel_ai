@@ -1,8 +1,10 @@
 package com.jwyoo.api.service;
 
 import com.jwyoo.api.entity.Character;
+import com.jwyoo.api.entity.Project;
 import com.jwyoo.api.exception.ResourceNotFoundException;
 import com.jwyoo.api.repository.CharacterRepository;
+import com.jwyoo.api.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,25 +22,29 @@ import java.util.List;
 public class CharacterService {
 
     private final CharacterRepository characterRepository;
+    private final ProjectRepository projectRepository;
+    private final ProjectService projectService;
 
     /**
-     * 모든 캐릭터 조회
+     * 모든 캐릭터 조회 (프로젝트별)
      */
     public List<Character> getAllCharacters() {
-        log.debug("Fetching all characters");
-        List<Character> characters = characterRepository.findAll();
+        Project currentProject = projectService.getCurrentProject();
+        log.debug("Fetching all characters for project: {}", currentProject.getId());
+        List<Character> characters = characterRepository.findByProject(currentProject);
         log.info("Fetched {} characters", characters.size());
         return characters;
     }
 
     /**
-     * ID로 캐릭터 조회
+     * ID로 캐릭터 조회 (프로젝트별)
      */
     public Character getCharacterById(Long id) {
-        log.debug("Fetching character by id: {}", id);
-        Character character = characterRepository.findById(id)
+        Project currentProject = projectService.getCurrentProject();
+        log.debug("Fetching character by id: {}, project: {}", id, currentProject.getId());
+        Character character = characterRepository.findByIdAndProject(id, currentProject)
             .orElseThrow(() -> {
-                log.error("Character not found with id: {}", id);
+                log.error("Character not found with id: {} in project: {}", id, currentProject.getId());
                 return new ResourceNotFoundException("캐릭터", id);
             });
         log.debug("Found character: id={}, characterId={}, name={}",
@@ -47,13 +53,14 @@ public class CharacterService {
     }
 
     /**
-     * characterId로 캐릭터 조회
+     * characterId로 캐릭터 조회 (프로젝트별)
      */
     public Character getCharacterByCharacterId(String characterId) {
-        log.debug("Fetching character by characterId: {}", characterId);
-        Character character = characterRepository.findByCharacterId(characterId)
+        Project currentProject = projectService.getCurrentProject();
+        log.debug("Fetching character by characterId: {}, project: {}", characterId, currentProject.getId());
+        Character character = characterRepository.findByCharacterIdAndProject(characterId, currentProject)
             .orElseThrow(() -> {
-                log.error("Character not found with characterId: {}", characterId);
+                log.error("Character not found with characterId: {} in project: {}", characterId, currentProject.getId());
                 return new ResourceNotFoundException("캐릭터", characterId);
             });
         log.debug("Found character: id={}, name={}", character.getId(), character.getName());
@@ -61,17 +68,22 @@ public class CharacterService {
     }
 
     /**
-     * 새로운 캐릭터 생성
+     * 새로운 캐릭터 생성 (현재 프로젝트에 자동 연결)
      */
     @Transactional
     public Character createCharacter(Character character) {
-        log.info("Creating new character: characterId={}, name={}",
-            character.getCharacterId(), character.getName());
+        Project currentProject = projectService.getCurrentProject();
+        log.info("Creating new character: characterId={}, name={}, project={}",
+            character.getCharacterId(), character.getName(), currentProject.getId());
 
-        if (characterRepository.existsByCharacterId(character.getCharacterId())) {
-            log.error("Character with characterId already exists: {}", character.getCharacterId());
+        // 같은 프로젝트 내에서 중복 확인
+        if (characterRepository.existsByCharacterIdAndProject(character.getCharacterId(), currentProject)) {
+            log.error("Character with characterId already exists in project: {}", character.getCharacterId());
             throw new IllegalArgumentException("이미 존재하는 캐릭터 ID입니다: " + character.getCharacterId());
         }
+
+        // 현재 프로젝트 자동 설정
+        character.setProject(currentProject);
 
         Character saved = characterRepository.save(character);
         log.info("Character created successfully: id={}, characterId={}, name={}",
@@ -80,12 +92,12 @@ public class CharacterService {
     }
 
     /**
-     * 캐릭터 정보 수정
+     * 캐릭터 정보 수정 (프로젝트별)
      */
     @Transactional
     public Character updateCharacter(Long id, Character character) {
         log.info("Updating character: id={}, newName={}", id, character.getName());
-        Character existing = getCharacterById(id);
+        Character existing = getCharacterById(id); // 이미 프로젝트 확인 포함
 
         String oldName = existing.getName();
         log.debug("Character before update: id={}, name={}, personality={}",
@@ -105,22 +117,17 @@ public class CharacterService {
     }
 
     /**
-     * 캐릭터 삭제
+     * 캐릭터 삭제 (프로젝트별)
      */
     @Transactional
     public void deleteCharacter(Long id) {
         log.info("Deleting character: id={}", id);
 
-        if (!characterRepository.existsById(id)) {
-            log.error("Cannot delete - character not found: id={}", id);
-            throw new ResourceNotFoundException("캐릭터", id);
-        }
-
-        Character character = getCharacterById(id);
+        Character character = getCharacterById(id); // 이미 프로젝트 확인 포함
         log.info("Deleting character: id={}, characterId={}, name={}",
             id, character.getCharacterId(), character.getName());
 
-        characterRepository.deleteById(id);
+        characterRepository.delete(character);
         log.info("Character deleted successfully: id={}", id);
     }
 

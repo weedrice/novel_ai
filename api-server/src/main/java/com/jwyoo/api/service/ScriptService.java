@@ -1,6 +1,7 @@
 package com.jwyoo.api.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jwyoo.api.entity.Project;
 import com.jwyoo.api.entity.Script;
 import com.jwyoo.api.repository.ScriptRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,29 +24,32 @@ import java.util.Map;
 public class ScriptService {
 
     private final ScriptRepository scriptRepository;
+    private final ProjectService projectService;
     private final ObjectMapper objectMapper;
 
     @Value("${LLM_BASE_URL:http://localhost:8000}")
     private String llmBaseUrl;
 
     /**
-     * 모든 스크립트 조회 (최신순)
+     * 모든 스크립트 조회 (최신순, 프로젝트별)
      */
     public List<Script> getAllScripts() {
-        log.debug("Fetching all scripts");
-        List<Script> scripts = scriptRepository.findAllByOrderByCreatedAtDesc();
+        Project currentProject = projectService.getCurrentProject();
+        log.debug("Fetching all scripts for project: {}", currentProject.getId());
+        List<Script> scripts = scriptRepository.findByProjectOrderByCreatedAtDesc(currentProject);
         log.info("Fetched {} scripts", scripts.size());
         return scripts;
     }
 
     /**
-     * ID로 스크립트 조회
+     * ID로 스크립트 조회 (프로젝트별)
      */
     public Script getScriptById(Long id) {
-        log.debug("Fetching script by id: {}", id);
-        Script script = scriptRepository.findById(id)
+        Project currentProject = projectService.getCurrentProject();
+        log.debug("Fetching script by id: {}, project: {}", id, currentProject.getId());
+        Script script = scriptRepository.findByIdAndProject(id, currentProject)
                 .orElseThrow(() -> {
-                    log.error("Script not found with id: {}", id);
+                    log.error("Script not found with id: {} in project: {}", id, currentProject.getId());
                     return new RuntimeException("Script not found with id: " + id);
                 });
         log.debug("Found script: id={}, title={}, status={}", script.getId(), script.getTitle(), script.getStatus());
@@ -53,28 +57,31 @@ public class ScriptService {
     }
 
     /**
-     * 상태별 스크립트 조회
+     * 상태별 스크립트 조회 (프로젝트별)
      */
     public List<Script> getScriptsByStatus(String status) {
-        log.debug("Fetching scripts by status: {}", status);
-        List<Script> scripts = scriptRepository.findByStatus(status);
+        Project currentProject = projectService.getCurrentProject();
+        log.debug("Fetching scripts by status: {}, project: {}", status, currentProject.getId());
+        List<Script> scripts = scriptRepository.findByProjectAndStatus(currentProject, status);
         log.info("Found {} scripts with status: {}", scripts.size(), status);
         return scripts;
     }
 
     /**
-     * 스크립트 업로드
+     * 스크립트 업로드 (현재 프로젝트에 자동 연결)
      */
     @Transactional
     public Script uploadScript(String title, String content, String formatHint) {
-        log.info("Uploading new script: title={}, length={} chars, format={}",
-                title, content.length(), formatHint);
+        Project currentProject = projectService.getCurrentProject();
+        log.info("Uploading new script: title={}, length={} chars, format={}, project={}",
+                title, content.length(), formatHint, currentProject.getId());
 
         Script script = Script.builder()
                 .title(title)
                 .content(content)
                 .formatHint(formatHint)
                 .status("uploaded")
+                .project(currentProject)
                 .build();
 
         Script saved = scriptRepository.save(script);
@@ -164,27 +171,25 @@ public class ScriptService {
     }
 
     /**
-     * 스크립트 삭제
+     * 스크립트 삭제 (프로젝트별)
      */
     @Transactional
     public void deleteScript(Long id) {
         log.info("Deleting script: id={}", id);
 
-        if (!scriptRepository.existsById(id)) {
-            log.error("Cannot delete - script not found: id={}", id);
-            throw new RuntimeException("Script not found with id: " + id);
-        }
+        Script script = getScriptById(id); // 이미 프로젝트 확인 포함
 
-        scriptRepository.deleteById(id);
+        scriptRepository.delete(script);
         log.info("Script deleted successfully: id={}", id);
     }
 
     /**
-     * 스크립트 제목으로 검색
+     * 스크립트 제목으로 검색 (프로젝트별)
      */
     public List<Script> searchScripts(String keyword) {
-        log.debug("Searching scripts with keyword: {}", keyword);
-        List<Script> scripts = scriptRepository.findByTitleContainingIgnoreCase(keyword);
+        Project currentProject = projectService.getCurrentProject();
+        log.debug("Searching scripts with keyword: {}, project: {}", keyword, currentProject.getId());
+        List<Script> scripts = scriptRepository.findByProjectAndTitleContainingIgnoreCase(currentProject, keyword);
         log.info("Found {} scripts matching '{}'", scripts.size(), keyword);
         return scripts;
     }
