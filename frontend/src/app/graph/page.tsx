@@ -138,21 +138,25 @@ function GraphPageContent() {
       setNodes(layouted)
       setEdges(flowEdges)
 
-      // 레이아웃 후 fitView
-      setTimeout(() => {
-        reactFlowInstance.fitView({ padding: 0.2, duration: 400 })
-      }, 50)
-
     } catch (e: any) {
       setError(`그래프 로드 실패: ${e?.message || e}`)
     } finally {
       setLoading(false)
     }
-  }, [layoutDirection, setNodes, setEdges, reactFlowInstance])
+  }, [layoutDirection, setNodes, setEdges])
 
   useEffect(() => {
     fetchGraph()
-  }, [fetchGraph])
+  }, [layoutDirection, fetchGraph])
+
+  // nodes 변경 시 fitView
+  useEffect(() => {
+    if (nodes.length > 0) {
+      setTimeout(() => {
+        reactFlowInstance.fitView({ padding: 0.2, duration: 400 })
+      }, 50)
+    }
+  }, [nodes, reactFlowInstance])
 
   const onConnect = useCallback(
     (c: Connection) => setEdges((eds) => addEdge(c, eds)),
