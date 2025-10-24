@@ -29,10 +29,16 @@ services:
     environment:
       - FRONTEND_ORIGIN=http://localhost:3001
       - LLM_BASE_URL=http://llm-server:8000
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/novel_ai
+      - SPRING_DATASOURCE_USERNAME=dev
+      - SPRING_DATASOURCE_PASSWORD=dev1234
     networks:
       - app-network
     depends_on:
-      - llm-server
+      postgres:
+        condition: service_healthy
+      llm-server:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -57,31 +63,44 @@ services:
       retries: 3
       start_period: 10s
 
-  # Future database services (commented out for initial setup)
-  # postgres:
-  #   image: postgres:16-alpine
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     - POSTGRES_DB=novel_ai
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #   volumes:
-  #     - postgres-data:/var/lib/postgresql/data
-  #   networks:
-  #     - app-network
+  neo4j:
+    image: neo4j:5-community
+    ports:
+      - "7474:7474"  # HTTP (Neo4j Browser)
+      - "7687:7687"  # Bolt protocol
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    volumes:
+      - neo4j-data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # neo4j:
-  #   image: neo4j:5-community
-  #   ports:
-  #     - "7474:7474"
-  #     - "7687:7687"
-  #   environment:
-  #     - NEO4J_AUTH=neo4j/password
-  #   volumes:
-  #     - neo4j-data:/data
-  #   networks:
-  #     - app-network
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=novel_ai
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=dev1234
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d novel_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # qdrant:
   #   image: qdrant/qdrant:latest
@@ -97,7 +116,6 @@ networks:
   app-network:
     driver: bridge
 
-# volumes:
-#   postgres-data:
-#   neo4j-data:
-#   qdrant-data:
+volumes:
+  neo4j-data:
+  postgres-data:
