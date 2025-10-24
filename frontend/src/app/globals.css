@@ -4,7 +4,7 @@
 @plugin "@tailwindcss/forms";
 
 /* Tailwind v4 dark mode variant - class 기반 */
-@variant dark (.dark *);
+@variant dark (&:where(.dark, .dark *));
 
 /* Tailwind v4 테마 설정 - CSS 기반 */
 @theme {
