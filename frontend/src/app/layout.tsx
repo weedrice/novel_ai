@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ProjectProvider } from '@/contexts/ProjectContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ToastProvider } from '@/contexts/ToastContext';
 import Navbar from '@/components/Navbar';
 
 export const metadata: Metadata = {
@@ -14,15 +16,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
       </head>
-      <body>
-        <ProjectProvider>
-          <Navbar />
-          {children}
-        </ProjectProvider>
+      <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200" suppressHydrationWarning>
+        <ThemeProvider>
+          <ToastProvider>
+            <ProjectProvider>
+              <Navbar />
+              {children}
+            </ProjectProvider>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
