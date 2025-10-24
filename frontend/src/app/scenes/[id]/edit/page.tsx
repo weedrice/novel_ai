@@ -546,7 +546,7 @@ export default function SceneEditPage() {
 
         {/* 대사 추가 모달 */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <h3 className="text-xl font-bold mb-4">대사 추가</h3>
               <div className="space-y-4">
@@ -622,7 +622,7 @@ export default function SceneEditPage() {
 
         {/* 버전 관리 모달 */}
         {showVersions && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold">저장된 버전 목록</h3>

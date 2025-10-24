@@ -1,8 +1,85 @@
 @import "tailwindcss";
 
+/* Tailwind v4 플러그인 로드 */
+@plugin "@tailwindcss/forms";
+
+/* Tailwind v4 dark mode variant - class 기반 */
+@variant dark (.dark *);
+
+/* Tailwind v4 테마 설정 - CSS 기반 */
+@theme {
+  /* 커스텀 색상 */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+
+  --color-secondary-50: #faf5ff;
+  --color-secondary-100: #f3e8ff;
+  --color-secondary-200: #e9d5ff;
+  --color-secondary-300: #d8b4fe;
+  --color-secondary-400: #c084fc;
+  --color-secondary-500: #a855f7;
+  --color-secondary-600: #9333ea;
+  --color-secondary-700: #7e22ce;
+  --color-secondary-800: #6b21a8;
+  --color-secondary-900: #581c87;
+
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  --color-success-800: #166534;
+  --color-success-900: #14532d;
+
+  --color-warning-50: #fefce8;
+  --color-warning-100: #fef9c3;
+  --color-warning-200: #fef08a;
+  --color-warning-300: #fde047;
+  --color-warning-400: #facc15;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-warning-700: #a16207;
+  --color-warning-800: #854d0e;
+  --color-warning-900: #713f12;
+
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+  --color-danger-800: #991b1b;
+  --color-danger-900: #7f1d1d;
+
+  /* 커스텀 스페이싱 */
+  --spacing-18: 4.5rem;
+  --spacing-88: 22rem;
+  --spacing-128: 32rem;
+
+  /* 커스텀 border radius */
+  --radius-4xl: 2rem;
+
+  /* 커스텀 애니메이션 */
+  --animate-spin-slow: spin 3s linear infinite;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /**
  * 글로벌 스타일
- * Tailwind CSS v4 기반으로 마이그레이션
+ * Tailwind CSS v4 기반
  */
 
 html,
@@ -12,12 +89,13 @@ body {
 
 body {
   margin: 0;
-  color: rgb(17 24 39);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
 }
+
+/* Tailwind 유틸리티 클래스에서 색상 관리 (layout.tsx의 body 클래스) */
 
 /* 링크 스타일 리셋 */
 a {
@@ -33,6 +111,11 @@ a {
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   padding: 1.5rem;
+}
+
+/* Dark mode 스타일 */
+.dark .card {
+  background-color: rgb(31 41 55); /* gray-800 */
 }
 
 /* 버튼 베이스 스타일 */
@@ -56,6 +139,14 @@ a {
   padding: 0.5rem 0.75rem;
   border: 1px solid rgb(209 213 219);
   border-radius: 0.375rem;
+  background-color: white;
+  color: rgb(17 24 39);
+}
+
+.dark .input {
+  background-color: rgb(55 65 81); /* gray-700 */
+  border-color: rgb(75 85 99); /* gray-600 */
+  color: rgb(243 244 246); /* gray-100 */
 }
 
 .input:focus {
@@ -71,6 +162,14 @@ a {
   border: 1px solid rgb(209 213 219);
   border-radius: 0.375rem;
   resize: vertical;
+  background-color: white;
+  color: rgb(17 24 39);
+}
+
+.dark .textarea {
+  background-color: rgb(55 65 81); /* gray-700 */
+  border-color: rgb(75 85 99); /* gray-600 */
+  color: rgb(243 244 246); /* gray-100 */
 }
 
 .textarea:focus {
@@ -87,6 +186,10 @@ a {
   font-weight: 600;
   color: rgb(55 65 81);
   margin-bottom: 0.5rem;
+}
+
+.dark .label {
+  color: rgb(209 213 219); /* gray-300 */
 }
 
 /* 에러 메시지 스타일 */
@@ -128,13 +231,25 @@ a {
   border-radius: 0.25rem;
 }
 
+.dark .scrollbar-thin::-webkit-scrollbar-track {
+  background-color: rgb(55 65 81); /* gray-700 */
+}
+
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background-color: rgb(156 163 175);
   border-radius: 0.25rem;
 }
 
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(107 114 128); /* gray-500 */
+}
+
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: rgb(107 114 128);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(75 85 99); /* gray-600 */
 }
 
 /* 텍스트 자르기 */
@@ -190,6 +305,10 @@ a {
   background-color: rgb(249 250 251);
 }
 
+.dark .react-flow {
+  background-color: rgb(17 24 39); /* gray-900 */
+}
+
 .react-flow__node {
   cursor: pointer;
 }
@@ -231,6 +350,21 @@ a {
 
 .animate-slide-in {
   animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
 }
 
 /**
