@@ -49,11 +49,11 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6 md:p-10">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 md:p-10 transition-colors duration-200">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">캐릭터 대사 톤 보조 시스템</h1>
-          <p className="text-gray-600 text-lg">Character Dialogue Tone Assistant System</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">캐릭터 대사 톤 보조 시스템</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">Character Dialogue Tone Assistant System</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
