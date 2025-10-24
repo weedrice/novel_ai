@@ -85,12 +85,21 @@ public class AuthController {
             // 사용자 정보 조회
             User user = userService.findByUsername(request.getUsername());
 
+            // UserDTO 생성
+            LoginResponse.UserDTO userDTO = LoginResponse.UserDTO.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .role(user.getRole().name())
+                    .build();
+
             // 응답 생성
             LoginResponse response = LoginResponse.builder()
                     .token(token)
                     .type("Bearer")
                     .username(user.getUsername())
                     .email(user.getEmail())
+                    .user(userDTO)
                     .build();
 
             log.info("Login successful for user: {}", request.getUsername());

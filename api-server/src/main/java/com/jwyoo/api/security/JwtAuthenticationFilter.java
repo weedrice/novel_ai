@@ -37,9 +37,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+        log.info("JwtAuthenticationFilter executing for: {}", request.getRequestURI());
         try {
             // 1. 요청 헤더에서 JWT 토큰 추출
             String token = extractTokenFromRequest(request);
+            log.info("Extracted token: {}", token != null ? "present" : "absent");
 
             // 2. 토큰 검증
             if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
@@ -61,7 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 6. SecurityContext에 인증 정보 저장
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("Set authentication for user: {}", username);
+                log.info("Set authentication for user: {}", username);
             }
         } catch (Exception e) {
             log.error("Could not set user authentication in security context", e);
@@ -78,9 +80,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private String extractTokenFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
+        log.info("Authorization header value: {}", bearerToken);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
-            return bearerToken.substring(BEARER_PREFIX.length());
+            String token = bearerToken.substring(BEARER_PREFIX.length());
+            log.info("Extracted JWT token (first 20 chars): {}", token.length() > 20 ? token.substring(0, 20) + "..." : token);
+            return token;
         }
+        log.warn("No valid Bearer token found in Authorization header");
         return null;
     }
 }

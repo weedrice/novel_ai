@@ -22,9 +22,19 @@ public class LoginResponse {
     private String username;
     private String email;
 
-    public LoginResponse(String token, String username, String email) {
-        this.token = token;
-        this.username = username;
-        this.email = email;
+    private UserDTO user;
+
+    /**
+     * 사용자 정보 DTO
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserDTO {
+        private Long id;
+        private String username;
+        private String email;
+        private String role;
     }
 }
