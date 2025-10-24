@@ -1,7 +1,7 @@
 # Next Tasks - 프로젝트 개발 단계별 작업 목록
 
 > 프로젝트 시작부터 완료까지 단계별 작업 가이드
-> 마지막 업데이트: 2025-10-23
+> 마지막 업데이트: 2025-10-24
 
 ---
 
@@ -1192,6 +1192,39 @@
 - [ ] 프로젝트 공유 및 협업 기능
 - [ ] JWT 토큰 갱신 (Refresh Token)
 - [ ] 비밀번호 재설정 기능
+
+---
+
+## 🔧 인프라 개선 (2025-10-24)
+
+### CORS 설정 문제 해결
+- **문제**: Spring Security와 WebMvcConfigurer의 CORS 설정 충돌로 `allowCredentials`와 `allowedHeaders("*")` 함께 사용 시 에러 발생
+- **해결**:
+  - CorsConfig.java를 CorsConfigurationSource Bean 방식으로 변경
+  - SecurityConfig.java에서 CorsConfig의 Bean 주입 및 사용
+  - `allowedOriginPatterns("http://localhost:*")` 사용
+  - `allowedHeaders`를 명시적으로 지정 (Authorization, Content-Type 등)
+- **파일**:
+  - `api-server/src/main/java/com/jwyoo/api/config/CorsConfig.java`
+  - `api-server/src/main/java/com/jwyoo/api/config/SecurityConfig.java`
+- **완료 날짜**: 2025-10-24
+
+### 전체 서비스 점검 (2025-10-24)
+- **Docker 컨테이너 상태**:
+  - ✅ API Server (novel_ai-api-server-1): healthy, Port 8080
+  - ✅ LLM Server (novel_ai-llm-server-1): healthy, Port 8000
+  - ✅ Frontend (novel_ai-frontend-1): healthy, Port 3001
+  - ✅ Neo4j (novel_ai-neo4j-1): healthy, Ports 7474, 7687
+  - ✅ PostgreSQL (postgres-dev): Up, Port 5432
+- **데이터베이스**:
+  - ✅ PostgreSQL `novel_ai` 데이터베이스 생성 완료
+  - ✅ 9개 테이블 정상 생성 및 초기 데이터 로드 완료
+  - ✅ Neo4j 정상 연결 (노드 수: 0, 아직 관계 데이터 미로드)
+- **API 엔드포인트 테스트**:
+  - ✅ POST /auth/login: JWT 토큰 발급 성공
+  - ✅ GET /characters: 인증된 요청 처리 정상
+  - ✅ Health Check: API Server, LLM Server, Frontend 모두 정상
+- **완료 날짜**: 2025-10-24
 
 ---
 

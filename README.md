@@ -172,7 +172,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   - LLM 기반 스크립트 분석 (캐릭터, 장면, 대사, 관계 추출)
   - Fallback 더미 응답 시스템
 
-### 🔧 최근 수정 사항 (2025-10-23)
+### 🔧 최근 수정 사항 (2025-10-24)
 - **Phase 6 구현 완료**: 사용자 인증 및 프로젝트 관리 시스템
   - **백엔드 인증**:
     - User 엔티티 및 UserRepository 구현
@@ -207,15 +207,23 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   - 대사 추출 및 화자 매칭
   - 캐릭터 간 관계 분석 (관계 유형, 친밀도)
 - **버그 수정**: RelationshipService.java:108 타입 에러 해결 (Integer → Double)
+- **인프라 개선 (2025-10-24)**:
+  - **CORS 설정 문제 해결**: CorsConfig 및 SecurityConfig 수정으로 CORS 충돌 해결
+    - `allowedOriginPatterns` 사용 및 명시적 헤더 지정
+    - CorsConfigurationSource Bean 방식으로 통합
+  - **전체 서비스 점검 완료**:
+    - 모든 Docker 컨테이너 정상 작동 (API, LLM, Frontend, Neo4j, PostgreSQL)
+    - PostgreSQL `novel_ai` 데이터베이스 생성 및 초기 데이터 로드 완료
+    - JWT 인증 API 정상 작동 확인
+    - Health Check 엔드포인트 모두 정상
 
 ### ⚠️ 알려진 이슈 및 제한사항
-1. **데이터 영속성**:
-   - H2 메모리 DB 사용으로 서버 재시작 시 데이터 초기화됨
-   - `ddl-auto=create-drop` 설정으로 서버 종료 시 모든 테이블 삭제
-   - **해결 방안**: Phase 8에서 PostgreSQL로 마이그레이션 예정
-2. **데이터베이스 설정**:
-   - docker-compose.yml에 PostgreSQL이 주석 처리되어 있음
-   - 프로덕션 환경 DB 연동 필요
+1. **데이터베이스 설정**:
+   - PostgreSQL 사용 중이나 Docker 컨테이너 재시작 시 데이터 초기화 가능
+   - 볼륨 마운트로 데이터 영속성 확보 필요
+2. **Neo4j 관계 데이터**:
+   - Neo4j 컨테이너는 실행 중이나 관계 데이터 아직 미로드
+   - Phase 9에서 관계형 DB의 Relationship을 Neo4j로 마이그레이션 예정
 
 ### 📋 다음 단계 (우선순위 순)
 1. **Phase 7**: Vector DB 및 의미 검색 (선택적)
