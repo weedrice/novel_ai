@@ -33,6 +33,8 @@ import Legend from '@/components/features/graph/Legend'
 import { applyDagreLayout, LayoutDirection } from '@/components/features/graph/utils/layout'
 import { Person, Relation, RelationType, RELATION_COLORS } from '@/components/features/graph/types'
 import apiClient from '@/lib/api'
+import { demoCharacters, demoRelationships, isDemoMode } from '@/data/demoData'
+import Link from 'next/link'
 
 // 노드 타입 등록
 const nodeTypes = {
@@ -60,17 +62,47 @@ function GraphPageContent() {
   const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>('TB')
   const [selectedNode, setSelectedNode] = useState<Node<Person> | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null)
+  const [isDemo, setIsDemo] = useState(false)
   const reactFlowInstance = useReactFlow()
+
+  // 컴포넌트 마운트 시 데모 모드 확인
+  useEffect(() => {
+    setIsDemo(isDemoMode())
+  }, [])
 
   const fetchGraph = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const res = await apiClient.get('/relationships/graph')
-      const data = res.data
+      let rawNodes: GraphNode[] = []
+      let rawEdges: GraphEdge[] = []
 
-      const rawNodes: GraphNode[] = Array.isArray(data?.nodes) ? data.nodes : []
-      const rawEdges: GraphEdge[] = Array.isArray(data?.edges) ? data.edges : []
+      if (isDemo) {
+        // 데모 모드: 데모 데이터 변환
+        await new Promise(resolve => setTimeout(resolve, 300)) // 실제 API 호출처럼 딜레이 추가
+
+        // 캐릭터를 노드로 변환
+        rawNodes = demoCharacters.map((c: any) => ({
+          id: String(c.id),
+          label: c.name,
+        }))
+
+        // 관계를 엣지로 변환
+        rawEdges = demoRelationships.map((r: any) => ({
+          id: String(r.id),
+          source: String(r.fromCharacterId),
+          target: String(r.toCharacterId),
+          label: r.relationType,
+          closeness: r.closeness,
+        }))
+      } else {
+        // 일반 모드: API에서 데이터 가져오기
+        const res = await apiClient.get('/relationships/graph')
+        const data = res.data
+
+        rawNodes = Array.isArray(data?.nodes) ? data.nodes : []
+        rawEdges = Array.isArray(data?.edges) ? data.edges : []
+      }
 
       // Person 타입으로 변환
       const personNodes: Node<Person>[] = rawNodes.map((n) => ({
@@ -143,7 +175,7 @@ function GraphPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [layoutDirection, setNodes, setEdges])
+  }, [layoutDirection, setNodes, setEdges, isDemo])
 
   useEffect(() => {
     fetchGraph()
@@ -208,18 +240,39 @@ function GraphPageContent() {
   }, [reactFlowInstance])
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-6 transition-colors duration-200">
       <div className="max-w-[1800px] mx-auto">
+        {/* 데모 모드 배너 */}
+        {isDemo && (
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400 rounded-r-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-500 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong className="font-semibold">데모 모드</strong> - 현재 예시 관계 그래프를 보고 계십니다.
+                  <Link href="/login" className="underline ml-1 hover:text-blue-800 dark:hover:text-blue-200">
+                    로그인
+                  </Link>하여 나만의 캐릭터 관계를 만들고 저장하세요.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 상단 헤더 */}
         <div className="mb-4 flex items-center gap-3 flex-wrap">
           <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/')}>
             ← 홈으로
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900">인물 관계도</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">인물 관계도</h1>
 
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             <button
-              className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border shadow-sm transition-colors text-sm font-medium"
+              className="px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-sm font-medium"
               onClick={toggleLayout}
               title="레이아웃 전환"
             >
@@ -227,7 +280,7 @@ function GraphPageContent() {
             </button>
 
             <button
-              className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border shadow-sm transition-colors text-sm font-medium"
+              className="px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-sm font-medium"
               onClick={handleFitView}
               title="전체 보기"
             >
@@ -235,7 +288,7 @@ function GraphPageContent() {
             </button>
 
             <button
-              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors text-sm font-medium"
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-colors text-sm font-medium"
               onClick={fetchGraph}
             >
               새로고침
@@ -255,7 +308,7 @@ function GraphPageContent() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* 메인 그래프 영역 */}
             <div className="lg:col-span-3" style={{ height: '85vh' }}>
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full border border-gray-200">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden h-full border border-gray-200 dark:border-gray-700 transition-colors">
                 <ReactFlow
                   nodes={nodes}
                   edges={edges}
@@ -293,82 +346,82 @@ function GraphPageContent() {
 
             {/* 사이드 패널 */}
             <aside className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-lg p-5 border border-gray-200 sticky top-4">
-                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <span className="w-1 h-5 bg-indigo-600 rounded-full"></span>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border border-gray-200 dark:border-gray-700 sticky top-4 transition-colors">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-indigo-600 dark:bg-indigo-500 rounded-full"></span>
                   상세 정보
                 </h2>
 
                 {!selectedNode && !selectedEdge && (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     노드 또는 관계선을 클릭하면 상세 정보를 표시합니다.
                   </p>
                 )}
 
                 {selectedNode && (
                   <div className="space-y-3">
-                    <div className="pb-3 border-b border-gray-200">
-                      <div className="text-2xl font-bold text-gray-900 mb-1">
+                    <div className="pb-3 border-b border-gray-200 dark:border-gray-700">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                         {selectedNode.data.name}
                       </div>
                       {selectedNode.data.title && (
-                        <div className="text-sm text-gray-600">{selectedNode.data.title}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{selectedNode.data.title}</div>
                       )}
                       {selectedNode.data.age && (
-                        <div className="text-sm text-gray-500">{selectedNode.data.age}세</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{selectedNode.data.age}세</div>
                       )}
                     </div>
 
                     {selectedNode.data.description && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-700 mb-1">설명</div>
-                        <div className="text-sm text-gray-600">{selectedNode.data.description}</div>
+                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">설명</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{selectedNode.data.description}</div>
                       </div>
                     )}
 
                     {selectedNode.data.family && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-700 mb-1">가족</div>
-                        <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-indigo-50 text-indigo-700">
+                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">가족</div>
+                        <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
                           {selectedNode.data.family}
                         </span>
                       </div>
                     )}
 
-                    <div className="pt-3 border-t border-gray-200">
-                      <div className="text-xs text-gray-400">ID: {selectedNode.id}</div>
+                    <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-400 dark:text-gray-500">ID: {selectedNode.id}</div>
                     </div>
                   </div>
                 )}
 
                 {selectedEdge && (
                   <div className="space-y-3">
-                    <div className="pb-3 border-b border-gray-200">
-                      <div className="text-lg font-bold text-gray-900 mb-2">관계 정보</div>
-                      <div className="text-sm text-gray-600">{selectedEdge.label}</div>
+                    <div className="pb-3 border-b border-gray-200 dark:border-gray-700">
+                      <div className="text-lg font-bold text-gray-900 dark:text-white mb-2">관계 정보</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{selectedEdge.label}</div>
                     </div>
 
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-500">출발:</span>
-                        <span className="font-medium text-gray-900">{selectedEdge.source}</span>
+                        <span className="text-gray-500 dark:text-gray-400">출발:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{selectedEdge.source}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500">도착:</span>
-                        <span className="font-medium text-gray-900">{selectedEdge.target}</span>
+                        <span className="text-gray-500 dark:text-gray-400">도착:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{selectedEdge.target}</span>
                       </div>
                       {(selectedEdge.data as any)?.closeness && (
                         <div className="flex justify-between">
-                          <span className="text-gray-500">친밀도:</span>
-                          <span className="font-medium text-gray-900">
+                          <span className="text-gray-500 dark:text-gray-400">친밀도:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
                             {(selectedEdge.data as any).closeness}/10
                           </span>
                         </div>
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-gray-200">
-                      <div className="text-xs text-gray-400">ID: {selectedEdge.id}</div>
+                    <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-400 dark:text-gray-500">ID: {selectedEdge.id}</div>
                     </div>
                   </div>
                 )}

@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/Card'
 import ErrorMessage from '@/components/ErrorMessage'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import apiClient from '@/lib/api'
+import { demoEpisodes, demoCandidates, isDemoMode } from '@/data/demoData'
+import Link from 'next/link'
 
 export default function Home() {
   const [episodes, setEpisodes] = useState<any[]>([])
@@ -13,8 +15,25 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [provider, setProvider] = useState<string>('openai')
+  const [isDemo, setIsDemo] = useState(false)
+
+  // 컴포넌트 마운트 시 데모 모드 확인
+  useEffect(() => {
+    setIsDemo(isDemoMode())
+  }, [])
 
   const fetchEpisodes = async () => {
+    // 데모 모드일 경우 데모 데이터 사용
+    if (isDemo) {
+      setLoading(true)
+      // 실제 API 호출처럼 보이도록 약간의 딜레이 추가
+      setTimeout(() => {
+        setEpisodes(demoEpisodes)
+        setLoading(false)
+      }, 300)
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
@@ -28,6 +47,17 @@ export default function Home() {
   }
 
   const fetchSuggestions = async () => {
+    // 데모 모드일 경우 데모 데이터 사용
+    if (isDemo) {
+      setLoading(true)
+      // 실제 API 호출처럼 보이도록 약간의 딜레이 추가
+      setTimeout(() => {
+        setCandidates(demoCandidates)
+        setLoading(false)
+      }, 500)
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
@@ -51,6 +81,27 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 md:p-10 transition-colors duration-200">
       <div className="max-w-4xl mx-auto">
+        {/* 데모 모드 배너 */}
+        {isDemo && (
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400 rounded-r-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-500 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong className="font-semibold">데모 모드</strong> - 현재 예시 데이터를 보고 계십니다.
+                  <Link href="/login" className="underline ml-1 hover:text-blue-800 dark:hover:text-blue-200">
+                    로그인
+                  </Link>하여 나만의 프로젝트를 만들고 저장하세요.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">캐릭터 대사 톤 보조 시스템</h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">Character Dialogue Tone Assistant System</p>
