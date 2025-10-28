@@ -24,6 +24,77 @@ export interface LoginRequest {
 }
 
 /**
+ * JWT 토큰 디코딩 (페이로드만 추출)
+ */
+const decodeJWT = (token: string): any => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('JWT 디코딩 실패:', error);
+    return null;
+  }
+};
+
+/**
+ * JWT 토큰 만료 여부 확인
+ */
+export const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = decodeJWT(token);
+    if (!payload || !payload.exp) {
+      return true; // 페이로드나 만료 시간이 없으면 만료로 간주
+    }
+
+    // exp는 Unix timestamp (초 단위)
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error('토큰 만료 체크 실패:', error);
+    return true; // 에러 시 만료로 간주
+  }
+};
+
+/**
+ * JWT 토큰 만료 시간 가져오기 (Unix timestamp)
+ */
+export const getTokenExpiryTime = (token: string): number | null => {
+  try {
+    const payload = decodeJWT(token);
+    return payload?.exp || null;
+  } catch (error) {
+    console.error('토큰 만료 시간 추출 실패:', error);
+    return null;
+  }
+};
+
+/**
+ * 저장된 토큰의 유효성 검증
+ */
+export const validateStoredToken = (): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+
+  // 토큰 만료 확인
+  if (isTokenExpired(token)) {
+    console.warn('저장된 토큰이 만료되었습니다. 로그아웃합니다.');
+    logout();
+    return false;
+  }
+
+  return true;
+};
+
+/**
  * 회원가입
  */
 export const signup = async (data: SignupRequest): Promise<LoginResponse> => {
@@ -65,13 +136,22 @@ export const getCurrentUser = (): User | null => {
 };
 
 /**
- * 로그인 여부 확인
+ * 로그인 여부 확인 (토큰 만료 체크 포함)
  */
 export const isAuthenticated = (): boolean => {
   if (typeof window === 'undefined') return false;
 
   const token = localStorage.getItem('token');
-  return !!token;
+  if (!token) return false;
+
+  // 토큰 만료 확인
+  if (isTokenExpired(token)) {
+    console.warn('토큰이 만료되어 로그아웃 처리합니다.');
+    logout();
+    return false;
+  }
+
+  return true;
 };
 
 /**

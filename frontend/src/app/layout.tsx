@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import Navbar from '@/components/Navbar';
 import GlobalKeyboardShortcuts from '@/components/GlobalKeyboardShortcuts';
+import AuthValidator from '@/components/AuthValidator';
 
 export const metadata: Metadata = {
   title: 'Novel AI',
@@ -25,6 +26,7 @@ export default function RootLayout({
         <ThemeProvider>
           <ToastProvider>
             <ProjectProvider>
+              <AuthValidator />
               <Navbar />
               <GlobalKeyboardShortcuts />
               {children}
