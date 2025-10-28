@@ -8,7 +8,8 @@ export interface User {
 }
 
 export interface LoginResponse {
-  token: string;
+  token: string; // Access Token
+  refreshToken: string; // Refresh Token
   user: User;
 }
 
@@ -115,6 +116,7 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
  */
 export const logout = () => {
   localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
   window.location.href = '/login';
 };
@@ -157,7 +159,47 @@ export const isAuthenticated = (): boolean => {
 /**
  * 토큰 및 사용자 정보 저장
  */
-export const saveAuthData = (token: string, user: User) => {
+export const saveAuthData = (token: string, user: User, refreshToken?: string) => {
   localStorage.setItem('token', token);
   localStorage.setItem('user', JSON.stringify(user));
+  if (refreshToken) {
+    localStorage.setItem('refreshToken', refreshToken);
+  }
+};
+
+/**
+ * Refresh Token 가져오기
+ */
+export const getRefreshToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('refreshToken');
+};
+
+/**
+ * Access Token 갱신
+ */
+export const refreshAccessToken = async (): Promise<string | null> => {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    console.warn('Refresh Token not found');
+    return null;
+  }
+
+  try {
+    const response = await apiClient.post('/auth/refresh', { refreshToken });
+    const { token } = response.data;
+
+    // 새 Access Token 저장
+    localStorage.setItem('token', token);
+    console.log('Access Token refreshed successfully');
+
+    return token;
+  } catch (error: any) {
+    console.error('Failed to refresh access token:', error);
+    // Refresh Token도 만료된 경우 로그아웃
+    if (error.response?.status === 401) {
+      logout();
+    }
+    return null;
+  }
 };

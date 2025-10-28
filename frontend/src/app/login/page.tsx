@@ -19,7 +19,7 @@ export default function LoginPage() {
 
     try {
       const response = await login({ username, password });
-      saveAuthData(response.token, response.user);
+      saveAuthData(response.token, response.user, response.refreshToken);
 
       // 로그인 성공 시 홈으로 이동
       router.push('/');

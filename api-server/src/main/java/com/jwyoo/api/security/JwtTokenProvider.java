@@ -12,31 +12,35 @@ import java.util.Date;
 
 /**
  * JWT 토큰 생성 및 검증을 담당하는 Provider
+ * Access Token과 Refresh Token 모두 관리
  */
 @Slf4j
 @Component
 public class JwtTokenProvider {
 
     private final SecretKey secretKey;
-    private final long expirationTime;
+    private final long accessTokenExpiration;
+    private final long refreshTokenExpiration;
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration}") long expirationTime
+            @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
+            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expirationTime = expirationTime;
+        this.accessTokenExpiration = accessTokenExpiration;
+        this.refreshTokenExpiration = refreshTokenExpiration;
     }
 
     /**
-     * JWT 토큰 생성
+     * Access Token 생성 (짧은 만료 시간)
      *
      * @param username 사용자명
-     * @return JWT 토큰
+     * @return Access Token
      */
-    public String generateToken(String username) {
+    public String generateAccessToken(String username) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationTime);
+        Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
 
         return Jwts.builder()
                 .subject(username)
@@ -44,6 +48,33 @@ public class JwtTokenProvider {
                 .expiration(expiryDate)
                 .signWith(secretKey, Jwts.SIG.HS512)
                 .compact();
+    }
+
+    /**
+     * Refresh Token 생성 (긴 만료 시간)
+     *
+     * @param username 사용자명
+     * @return Refresh Token
+     */
+    public String generateRefreshToken(String username) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + refreshTokenExpiration);
+
+        return Jwts.builder()
+                .subject(username)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(secretKey, Jwts.SIG.HS512)
+                .compact();
+    }
+
+    /**
+     * 레거시 메서드 (하위 호환성)
+     * @deprecated generateAccessToken 사용 권장
+     */
+    @Deprecated
+    public String generateToken(String username) {
+        return generateAccessToken(username);
     }
 
     /**

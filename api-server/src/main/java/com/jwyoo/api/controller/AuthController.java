@@ -5,6 +5,7 @@ import com.jwyoo.api.dto.LoginResponse;
 import com.jwyoo.api.dto.SignupRequest;
 import com.jwyoo.api.entity.User;
 import com.jwyoo.api.security.JwtTokenProvider;
+import com.jwyoo.api.service.RefreshTokenService;
 import com.jwyoo.api.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class AuthController {
 
     private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
     private final AuthenticationManager authenticationManager;
 
     /**
@@ -79,8 +81,9 @@ public class AuthController {
                     )
             );
 
-            // JWT 토큰 생성
-            String token = jwtTokenProvider.generateToken(request.getUsername());
+            // Access Token 및 Refresh Token 생성
+            String accessToken = jwtTokenProvider.generateAccessToken(request.getUsername());
+            String refreshToken = refreshTokenService.createRefreshToken(request.getUsername());
 
             // 사용자 정보 조회
             User user = userService.findByUsername(request.getUsername());
@@ -95,14 +98,15 @@ public class AuthController {
 
             // 응답 생성
             LoginResponse response = LoginResponse.builder()
-                    .token(token)
+                    .token(accessToken)
+                    .refreshToken(refreshToken)
                     .type("Bearer")
                     .username(user.getUsername())
                     .email(user.getEmail())
                     .user(userDTO)
                     .build();
 
-            log.info("Login successful for user: {}", request.getUsername());
+            log.info("Login successful for user: {} (Access Token + Refresh Token issued)", request.getUsername());
             return ResponseEntity.ok(response);
 
         } catch (AuthenticationException e) {
@@ -114,6 +118,57 @@ public class AuthController {
             log.error("Login error: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "error", "로그인 처리 중 오류가 발생했습니다"
+            ));
+        }
+    }
+
+    /**
+     * Refresh Token으로 Access Token 갱신
+     *
+     * @param requestBody Refresh Token을 포함한 요청 바디
+     * @return 새로운 Access Token
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> requestBody) {
+        String refreshToken = requestBody.get("refreshToken");
+
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Refresh Token이 필요합니다"
+            ));
+        }
+
+        log.info("POST /auth/refresh - Attempting to refresh access token");
+
+        try {
+            String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
+
+            if (newAccessToken == null) {
+                log.warn("Invalid or expired refresh token");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "error", "유효하지 않거나 만료된 Refresh Token입니다"
+                ));
+            }
+
+            // 사용자 정보 조회 (Refresh Token에서 추출)
+            String username = jwtTokenProvider.getUsernameFromToken(newAccessToken);
+            User user = userService.findByUsername(username);
+
+            // 응답 생성
+            Map<String, Object> response = Map.of(
+                    "token", newAccessToken,
+                    "type", "Bearer",
+                    "username", user.getUsername(),
+                    "message", "Access Token이 갱신되었습니다"
+            );
+
+            log.info("Access Token refreshed successfully for user: {}", username);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Token refresh error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "error", "토큰 갱신 처리 중 오류가 발생했습니다"
             ));
         }
     }
