@@ -94,9 +94,9 @@ export default function Home() {
           {episodes.length > 0 && (
             <ul className="mt-4 space-y-2">
               {episodes.map((e: any) => (
-                <li key={e.id} className="p-3 bg-gray-50 rounded-md">
-                  <strong className="text-blue-600">ID {e.id}:</strong>{' '}
-                  <span className="text-gray-800">{e.title}</span>
+                <li key={e.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <strong className="text-blue-600 dark:text-blue-400">ID {e.id}:</strong>{' '}
+                  <span className="text-gray-800 dark:text-gray-200">{e.title}</span>
                 </li>
               ))}
             </ul>
@@ -105,17 +105,17 @@ export default function Home() {
 
         <Card title="대사 제안" className="mb-6">
           <div className="mb-4">
-            <label className="block mb-2 font-semibold text-gray-700">LLM 제공자 선택</label>
+            <label className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">LLM 제공자 선택</label>
             <select
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 min-w-[200px] transition-colors"
             >
               <option value="openai">OpenAI GPT</option>
               <option value="claude">Anthropic Claude</option>
               <option value="gemini">Google Gemini</option>
             </select>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               선택된 LLM:{' '}
               {provider === 'openai' ? 'OpenAI GPT' : provider === 'claude' ? 'Anthropic Claude' : 'Google Gemini'}
             </p>
@@ -125,7 +125,7 @@ export default function Home() {
             대사 제안 받기
           </Button>
 
-          <div className="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+          <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-md transition-colors">
             <strong>요청 설정:</strong> 화자: char.seha | 대상: char.jiho | 의도: reconcile | 톤: banmal
           </div>
 
@@ -138,9 +138,9 @@ export default function Home() {
           {candidates.length > 0 && (
             <ol className="mt-6 space-y-3">
               {candidates.map((c: any, i: number) => (
-                <li key={i} className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <span className="text-gray-800">{c.text}</span>{' '}
-                  <span className="text-gray-500 text-sm">(신뢰도: {c.score?.toFixed?.(2)})</span>
+                <li key={i} className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg transition-colors">
+                  <span className="text-gray-800 dark:text-gray-200">{c.text}</span>{' '}
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">(신뢰도: {c.score?.toFixed?.(2)})</span>
                 </li>
               ))}
             </ol>

@@ -4,6 +4,7 @@ import { ProjectProvider } from '@/contexts/ProjectContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import Navbar from '@/components/Navbar';
+import GlobalKeyboardShortcuts from '@/components/GlobalKeyboardShortcuts';
 
 export const metadata: Metadata = {
   title: 'Novel AI',
@@ -25,6 +26,7 @@ export default function RootLayout({
           <ToastProvider>
             <ProjectProvider>
               <Navbar />
+              <GlobalKeyboardShortcuts />
               {children}
             </ProjectProvider>
           </ToastProvider>
