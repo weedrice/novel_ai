@@ -36,7 +36,9 @@
       "Bash(docker-compose logs:*)",
       "Bash(docker-compose down:*)",
       "Bash(TOKEN=\"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJkZW1vIiwiaWF0IjoxNzYxMjkxMjI2LCJleHAiOjE3NjEzNzc2MjZ9._S--pWY5FWBoJTr0H8FWmEN5f6IFWWdC_G_L69NxlP4SiOUY4kJhyTSZeBJkifB6mjc5HcXA1wa8NTBGVBW5HQ\")",
-      "WebSearch"
+      "WebSearch",
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew clean:*)"
     ],
     "deny": [],
     "ask": []

@@ -2,6 +2,7 @@ plugins {
     java
     id("org.springframework.boot") version "3.4.1"
     id("io.spring.dependency-management") version "1.1.7"
+    jacoco
 }
 
 group = "com.jwyoo"
@@ -49,4 +50,24 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport) // 테스트 실행 후 자동으로 리포트 생성
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test) // 테스트가 먼저 실행되도록
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.0".toBigDecimal() // 현재는 최소 커버리지 설정 없음
+            }
+        }
+    }
 }
