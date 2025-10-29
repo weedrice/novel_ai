@@ -145,10 +145,14 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ## 현재 구현 상태
 
-### ✅ 완료된 기능 (2025-10-23 기준)
+### ✅ 완료된 기능 (2025-10-29 기준)
 - **Phase 0-6 완료**: 프로젝트 초기 설정, 도메인 모델 구축, 관계 그래프 시각화, LLM 연동, 시나리오 생성, 스크립트 분석, 사용자 인증 및 프로젝트 관리
+- **Phase 10 일부 완료**: UI/UX 개선, 인증 고도화, 데모 모드, 테스트 인프라
 - **백엔드 (api-server)**:
-  - **인증 시스템**: JWT 기반 회원가입/로그인, Spring Security 통합
+  - **인증 시스템**:
+    - JWT 기반 회원가입/로그인, Spring Security 통합
+    - Refresh Token 시스템 (자동 세션 연장)
+    - JWT 토큰 만료 처리 및 자동 로그아웃
   - **프로젝트 관리**: 사용자별 프로젝트 생성/조회/수정/삭제, 프로젝트별 데이터 분리
   - 완전한 CRUD API (Character, Episode, Scene, Dialogue, Relationship, Script, Project, User)
   - 시나리오 버전 관리 시스템
@@ -156,8 +160,15 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   - 포괄적인 로깅 인프라 (모든 서비스 레이어)
   - H2 인메모리 데이터베이스 (개발 환경)
   - 프로젝트별 데이터 필터링 (모든 Repository 및 Service)
+  - **테스트 인프라**:
+    - JUnit 기반 Service 계층 단위 테스트
+    - Repository 테스트 (@DataJpaTest)
+    - JaCoCo 커버리지 측정 및 리포트 생성
 - **프론트엔드 (frontend)**:
-  - **인증 UI**: 로그인/회원가입 페이지, JWT 토큰 관리, Axios Interceptor
+  - **인증 UI**:
+    - 로그인/회원가입 페이지, JWT 토큰 관리, Axios Interceptor
+    - Refresh Token 자동 갱신
+    - 토큰 만료 시 자동 로그아웃 및 알림
   - **프로젝트 관리 UI**: 프로젝트 선택 드롭다운, 프로젝트 생성 모달, 네비게이션 바
   - **프로젝트 컨텍스트**: 전역 프로젝트 상태 관리, 자동 프로젝트 선택
   - 캐릭터 관리 UI (말투 프로필 편집)
@@ -165,6 +176,12 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   - 시나리오 편집기 (장면별 대화 생성)
   - 스크립트 분석 UI (소설/시나리오 업로드 및 자동 분석)
   - LLM 프로바이더 선택 (GPT, Claude, Gemini)
+  - **UI/UX 개선**:
+    - 다크 모드 완성 (Tailwind CSS v4 기반, 테마 전환 토글)
+    - 키보드 단축키 (Ctrl+K 검색, ESC 닫기 등)
+    - 접근성 향상 (ARIA 레이블, 키보드 네비게이션)
+    - 로딩 스피너 및 에러 메시지 개선
+  - **데모 모드**: 비로그인 사용자에게 예시 데이터 및 로그인 유도 UI
 - **LLM 서버 (llm-server)**:
   - 멀티 프로바이더 지원 (OpenAI, Anthropic, Google)
   - 캐릭터 맞춤 프롬프트 엔지니어링
@@ -172,7 +189,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   - LLM 기반 스크립트 분석 (캐릭터, 장면, 대사, 관계 추출)
   - Fallback 더미 응답 시스템
 
-### 🔧 최근 수정 사항 (2025-10-24)
+### 🔧 최근 수정 사항 (2025-10-29)
 - **Phase 6 구현 완료**: 사용자 인증 및 프로젝트 관리 시스템
   - **백엔드 인증**:
     - User 엔티티 및 UserRepository 구현
@@ -216,6 +233,26 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     - PostgreSQL `novel_ai` 데이터베이스 생성 및 초기 데이터 로드 완료
     - JWT 인증 API 정상 작동 확인
     - Health Check 엔드포인트 모두 정상
+- **Phase 10 일부 완료 (2025-10-29)**:
+  - **UI/UX 개선**:
+    - ✅ 다크 모드 완성 (Tailwind CSS v4 기반)
+    - ✅ 테마 전환 토글 및 사용자 설정 저장
+    - ✅ 키보드 단축키 구현 (Ctrl+K 검색, ESC 닫기 등)
+    - ✅ 접근성 향상 (ARIA 레이블, 키보드 네비게이션)
+    - ✅ 로딩 스피너 및 에러 메시지 개선
+  - **인증 시스템 고도화**:
+    - ✅ Refresh Token 시스템 구현 (자동 세션 연장)
+    - ✅ JWT 토큰 만료 처리 및 자동 로그아웃 개선
+    - ✅ HttpOnly 쿠키 기반 Refresh Token 저장
+  - **데모 모드 구현**:
+    - ✅ 비로그인 사용자에게 예시 데이터 표시
+    - ✅ 로그인 유도 메시지 및 UI
+    - ✅ 데모 데이터 자동 생성 및 제공
+  - **테스트 인프라**:
+    - ✅ JUnit 기반 Service 계층 단위 테스트
+    - ✅ Repository 테스트 (@DataJpaTest)
+    - ✅ JaCoCo 커버리지 측정 및 리포트 생성
+    - ✅ 테스트 자동화 스크립트
 
 ### ⚠️ 알려진 이슈 및 제한사항
 1. **데이터베이스 설정**:
@@ -226,10 +263,14 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    - Phase 9에서 관계형 DB의 Relationship을 Neo4j로 마이그레이션 예정
 
 ### 📋 다음 단계 (우선순위 순)
-1. **Phase 7**: Vector DB 및 의미 검색 (선택적)
-2. **Phase 8**: Docker 및 배포 자동화 (PostgreSQL 마이그레이션, CI/CD)
-3. **Phase 9**: Neo4j GraphDB 전환 (선택적)
-4. **Phase 10**: 고급 기능 및 최적화 (지속적 개선)
+1. **Phase 10 (계속)**: 고급 기능 및 최적화 (일부 완료, 지속적 개선 중)
+   - ✅ 다크 모드, 키보드 단축키, 접근성 완료
+   - ✅ Refresh Token, 테스트 인프라 완료
+   - ⏳ 성능 최적화 (API 캐싱, DB 쿼리 최적화)
+   - ⏳ 프론트엔드 E2E 테스트
+2. **Phase 7**: Vector DB 및 의미 검색 (선택적)
+3. **Phase 8**: Docker 및 배포 자동화 (PostgreSQL 마이그레이션, CI/CD)
+4. **Phase 9**: Neo4j GraphDB 전환 (선택적)
 
 자세한 개발 로드맵은 [NEXT_TASKS.md](NEXT_TASKS.md)를 참고하세요.
 
