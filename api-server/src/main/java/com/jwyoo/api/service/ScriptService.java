@@ -3,6 +3,7 @@ package com.jwyoo.api.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jwyoo.api.entity.Project;
 import com.jwyoo.api.entity.Script;
+import com.jwyoo.api.exception.ResourceNotFoundException;
 import com.jwyoo.api.repository.ScriptRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +51,7 @@ public class ScriptService {
         Script script = scriptRepository.findByIdAndProject(id, currentProject)
                 .orElseThrow(() -> {
                     log.error("Script not found with id: {} in project: {}", id, currentProject.getId());
-                    return new RuntimeException("Script not found with id: " + id);
+                    return new ResourceNotFoundException("Script", id);
                 });
         log.debug("Found script: id={}, title={}, status={}", script.getId(), script.getTitle(), script.getStatus());
         return script;
