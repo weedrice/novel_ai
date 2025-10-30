@@ -1,6 +1,7 @@
 package com.jwyoo.api.service;
 
 import com.jwyoo.api.entity.Relationship;
+import com.jwyoo.api.exception.ResourceNotFoundException;
 import com.jwyoo.api.repository.RelationshipRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +39,7 @@ public class RelationshipService {
         Relationship relationship = relationshipRepository.findById(id)
                 .orElseThrow(() -> {
                     log.error("Relationship not found with id: {}", id);
-                    return new RuntimeException("Relationship not found with id: " + id);
+                    return new ResourceNotFoundException("Relationship", id);
                 });
         log.debug("Found relationship: id={}, type={}, from={}, to={}",
             relationship.getId(), relationship.getRelationType(),
@@ -126,7 +127,7 @@ public class RelationshipService {
 
         if (!relationshipRepository.existsById(id)) {
             log.error("Cannot delete - relationship not found: id={}", id);
-            throw new RuntimeException("Relationship not found with id: " + id);
+            throw new ResourceNotFoundException("Relationship", id);
         }
 
         relationshipRepository.deleteById(id);
