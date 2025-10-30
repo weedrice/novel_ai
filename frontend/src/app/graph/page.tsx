@@ -264,15 +264,15 @@ function GraphPageContent() {
         )}
 
         {/* 상단 헤더 */}
-        <div className="mb-4 flex items-center gap-3 flex-wrap">
+        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
           <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/')}>
             ← 홈으로
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">인물 관계도</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">인물 관계도</h1>
 
-          <div className="ml-auto flex items-center gap-2 flex-wrap">
+          <div className="sm:ml-auto flex items-center gap-2 flex-wrap w-full sm:w-auto">
             <button
-              className="px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-sm font-medium"
+              className="flex-1 sm:flex-none px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-xs sm:text-sm font-medium"
               onClick={toggleLayout}
               title="레이아웃 전환"
             >
@@ -280,7 +280,7 @@ function GraphPageContent() {
             </button>
 
             <button
-              className="px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-sm font-medium"
+              className="flex-1 sm:flex-none px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-xs sm:text-sm font-medium"
               onClick={handleFitView}
               title="전체 보기"
             >
@@ -288,7 +288,7 @@ function GraphPageContent() {
             </button>
 
             <button
-              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-colors text-sm font-medium"
+              className="flex-1 sm:flex-none px-3 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-colors text-xs sm:text-sm font-medium"
               onClick={fetchGraph}
             >
               새로고침
@@ -307,7 +307,7 @@ function GraphPageContent() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* 메인 그래프 영역 */}
-            <div className="lg:col-span-3" style={{ height: '85vh' }}>
+            <div className="lg:col-span-3 h-[500px] sm:h-[600px] lg:h-[85vh]">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden h-full border border-gray-200 dark:border-gray-700 transition-colors">
                 <ReactFlow
                   nodes={nodes}
@@ -346,9 +346,9 @@ function GraphPageContent() {
 
             {/* 사이드 패널 */}
             <aside className="lg:col-span-1">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border border-gray-200 dark:border-gray-700 sticky top-4 transition-colors">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <span className="w-1 h-5 bg-indigo-600 dark:bg-indigo-500 rounded-full"></span>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-5 border border-gray-200 dark:border-gray-700 lg:sticky lg:top-4 transition-colors">
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <span className="w-1 h-4 sm:h-5 bg-indigo-600 dark:bg-indigo-500 rounded-full"></span>
                   상세 정보
                 </h2>
 

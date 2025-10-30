@@ -86,49 +86,49 @@ export default function ScriptAnalyzer() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-4 sm:p-6 md:p-8 transition-colors duration-200">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">📝 스크립트 분석기</h1>
-            <p className="text-gray-600">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-2">📝 스크립트 분석기</h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
               소설, 시나리오, 묘사 등 다양한 형식의 스크립트를 분석하여 캐릭터와 관계를 추출합니다
             </p>
           </div>
           <Link
             href="/"
-            className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap"
           >
             ← 홈으로
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
           {/* Input Panel */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">📥 스크립트 입력</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 transition-colors">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-4">📥 스크립트 입력</h2>
 
             {/* Title Input */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">제목</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">제목</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="스크립트 제목을 입력하세요"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-colors"
               />
             </div>
 
             {/* Format and Provider */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">형식</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">형식</label>
                 <select
                   value={formatHint}
                   onChange={(e) => setFormatHint(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-colors"
                 >
                   <option value="novel">소설</option>
                   <option value="scenario">시나리오</option>
@@ -137,11 +137,11 @@ export default function ScriptAnalyzer() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">LLM 프로바이더</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">LLM 프로바이더</label>
                 <select
                   value={provider}
                   onChange={(e) => setProvider(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-colors"
                 >
                   <option value="openai">OpenAI GPT</option>
                   <option value="claude">Anthropic Claude</option>
@@ -152,7 +152,7 @@ export default function ScriptAnalyzer() {
 
             {/* Content Textarea */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 내용 ({content.length} 자)
               </label>
               <textarea
@@ -170,24 +170,24 @@ export default function ScriptAnalyzer() {
 
 예시 (묘사):
 학교 복도에서 세하와 지호가 만났다. 세하는 밝은 성격의 고등학생이고, 지호는 세하의 오랜 친구다."
-                rows={15}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+                rows={12}
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent font-mono text-sm transition-colors"
               />
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleAnalyze}
                 disabled={loading}
-                className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+                className="flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-semibold rounded-lg transition-colors text-sm sm:text-base"
               >
                 {loading ? '분석 중...' : '🔍 분석 시작'}
               </button>
               <button
                 onClick={handleClear}
                 disabled={loading}
-                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-700 font-semibold rounded-lg transition-colors"
+                className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition-colors text-sm sm:text-base"
               >
                 초기화
               </button>
@@ -195,42 +195,42 @@ export default function ScriptAnalyzer() {
 
             {/* Error Message */}
             {error && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700">⚠️ {error}</p>
+              <div className="mt-4 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-sm sm:text-base text-red-700 dark:text-red-400">⚠️ {error}</p>
               </div>
             )}
           </div>
 
           {/* Analysis Results Panel */}
-          <div className="bg-white rounded-xl shadow-lg p-6 overflow-y-auto max-h-[800px]">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">📊 분석 결과</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 overflow-y-auto max-h-[600px] sm:max-h-[800px] transition-colors">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-4">📊 분석 결과</h2>
 
             {!analysis && !loading && (
-              <div className="text-center py-20 text-gray-400">
-                <p className="text-lg">스크립트를 입력하고 분석을 시작하세요</p>
+              <div className="text-center py-12 sm:py-20 text-gray-400 dark:text-gray-500">
+                <p className="text-base sm:text-lg">스크립트를 입력하고 분석을 시작하세요</p>
               </div>
             )}
 
             {loading && (
-              <div className="text-center py-20">
-                <div className="animate-spin w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-gray-600">AI가 스크립트를 분석하고 있습니다...</p>
+              <div className="text-center py-12 sm:py-20">
+                <div className="animate-spin w-12 h-12 sm:w-16 sm:h-16 border-4 border-purple-500 dark:border-purple-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">AI가 스크립트를 분석하고 있습니다...</p>
               </div>
             )}
 
             {analysis && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Characters */}
                 <div>
-                  <h3 className="text-xl font-bold text-purple-700 mb-3 flex items-center gap-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
                     👥 캐릭터 ({analysis.characters.length})
                   </h3>
                   {analysis.characters.length === 0 ? (
-                    <p className="text-gray-500 italic">추출된 캐릭터가 없습니다</p>
+                    <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 italic">추출된 캐릭터가 없습니다</p>
                   ) : (
                     <div className="space-y-3">
                       {analysis.characters.map((char, idx) => (
-                        <div key={idx} className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div key={idx} className="p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg transition-colors">
                           <h4 className="font-bold text-lg text-purple-900">{char.name}</h4>
                           {char.description && (
                             <p className="text-sm text-gray-700 mt-1">{char.description}</p>
