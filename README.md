@@ -138,10 +138,52 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 3. PR 생성 시 유닛 테스트(`./gradlew test`, `pytest`)와 ESLint/Prettier 검사를 통과하도록 합니다.
 
 ## 테스트
-- `frontend/`: `npm run test`, `npm run lint`
-- `api-server/`: `./gradlew test`
-- `auth-server/`: `./gradlew test`
-- `llm-server/`: `pytest`
+
+### 백엔드 테스트
+```bash
+# API 서버 전체 테스트 실행
+cd api-server
+./gradlew test
+
+# 커버리지 리포트 생성
+./gradlew test jacocoTestReport
+# 리포트 위치: build/reports/jacoco/test/html/index.html
+
+# 특정 테스트만 실행
+./gradlew test --tests "*IntegrationTest"
+./gradlew test --tests "*ServiceTest"
+```
+
+### 프론트엔드 테스트
+```bash
+cd frontend
+
+# 단위 테스트 (Jest)
+npm test
+
+# 커버리지 포함
+npm run test:coverage
+
+# E2E 테스트 (Playwright)
+npm run test:e2e
+
+# E2E 테스트 UI 모드
+npm run test:e2e:ui
+
+# 특정 E2E 테스트만 실행
+npm run test:e2e -- responsive.spec.ts
+```
+
+### LLM 서버 테스트
+```bash
+cd llm-server
+pytest
+```
+
+### 테스트 통계 (2025-10-30 기준)
+- **백엔드**: 138개 (단위: 118, 통합: 20) | 커버리지: 67%
+- **프론트엔드**: 49개 (컴포넌트: 18, E2E: 31) | 반응형 E2E: 33 시나리오
+- **총 테스트**: 187개 ✅
 
 ## 현재 구현 상태
 
@@ -161,9 +203,12 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   - H2 인메모리 데이터베이스 (개발 환경)
   - 프로젝트별 데이터 필터링 (모든 Repository 및 Service)
   - **테스트 인프라**:
-    - JUnit 기반 Service 계층 단위 테스트
-    - Repository 테스트 (@DataJpaTest)
-    - JaCoCo 커버리지 측정 및 리포트 생성
+    - JUnit 기반 Service 계층 단위 테스트 (118개)
+    - 백엔드 통합 테스트 (20개 - Auth, Project, Database)
+    - 프론트엔드 컴포넌트 테스트 (Jest, 18개)
+    - 프론트엔드 E2E 테스트 (Playwright, 31개)
+    - 반응형 디자인 E2E 테스트 (33 시나리오)
+    - JaCoCo 커버리지 측정 및 리포트 생성 (67%)
 - **프론트엔드 (frontend)**:
   - **인증 UI**:
     - 로그인/회원가입 페이지, JWT 토큰 관리, Axios Interceptor
@@ -181,6 +226,10 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     - 키보드 단축키 (Ctrl+K 검색, ESC 닫기 등)
     - 접근성 향상 (ARIA 레이블, 키보드 네비게이션)
     - 로딩 스피너 및 에러 메시지 개선
+    - **반응형 디자인** (모바일, 태블릿, 데스크톱 완전 지원)
+      - 모바일 햄버거 메뉴 및 터치 최적화
+      - 브레이크포인트별 레이아웃 조정 (sm, md, lg, xl)
+      - 반응형 그리드 및 폼 레이아웃
   - **데모 모드**: 비로그인 사용자에게 예시 데이터 및 로그인 유도 UI
 - **LLM 서버 (llm-server)**:
   - 멀티 프로바이더 지원 (OpenAI, Anthropic, Google)
@@ -189,7 +238,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   - LLM 기반 스크립트 분석 (캐릭터, 장면, 대사, 관계 추출)
   - Fallback 더미 응답 시스템
 
-### 🔧 최근 수정 사항 (2025-10-29)
+### 🔧 최근 수정 사항 (2025-10-30)
 - **Phase 6 구현 완료**: 사용자 인증 및 프로젝트 관리 시스템
   - **백엔드 인증**:
     - User 엔티티 및 UserRepository 구현
@@ -233,13 +282,25 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     - PostgreSQL `novel_ai` 데이터베이스 생성 및 초기 데이터 로드 완료
     - JWT 인증 API 정상 작동 확인
     - Health Check 엔드포인트 모두 정상
-- **Phase 10 일부 완료 (2025-10-29)**:
+- **Phase 10 일부 완료 (2025-10-30)**:
   - **UI/UX 개선**:
     - ✅ 다크 모드 완성 (Tailwind CSS v4 기반)
     - ✅ 테마 전환 토글 및 사용자 설정 저장
     - ✅ 키보드 단축키 구현 (Ctrl+K 검색, ESC 닫기 등)
     - ✅ 접근성 향상 (ARIA 레이블, 키보드 네비게이션)
     - ✅ 로딩 스피너 및 에러 메시지 개선
+  - **반응형 디자인 (Task 87 완료)**:
+    - ✅ 모바일 레이아웃 최적화 (375px~640px)
+      - 모바일 햄버거 메뉴 추가
+      - 그리드 레이아웃 1열 조정
+      - 터치 타겟 크기 44px 이상 확보
+    - ✅ 태블릿 레이아웃 최적화 (768px~1024px)
+      - 그리드 레이아웃 2~3열 조정
+      - 폼 필드 가로 배치
+    - ✅ 브레이크포인트별 E2E 테스트 (33 시나리오)
+      - Mobile: iPhone SE (375x667)
+      - Tablet: iPad Mini (768x1024)
+      - Desktop: 1920x1080
   - **인증 시스템 고도화**:
     - ✅ Refresh Token 시스템 구현 (자동 세션 연장)
     - ✅ JWT 토큰 만료 처리 및 자동 로그아웃 개선
@@ -248,11 +309,13 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     - ✅ 비로그인 사용자에게 예시 데이터 표시
     - ✅ 로그인 유도 메시지 및 UI
     - ✅ 데모 데이터 자동 생성 및 제공
-  - **테스트 인프라**:
-    - ✅ JUnit 기반 Service 계층 단위 테스트
-    - ✅ Repository 테스트 (@DataJpaTest)
-    - ✅ JaCoCo 커버리지 측정 및 리포트 생성
-    - ✅ 테스트 자동화 스크립트
+  - **테스트 인프라 (총 187개 테스트)**:
+    - ✅ 백엔드 단위 테스트 (118개 - Service, Repository)
+    - ✅ 백엔드 통합 테스트 (20개 - Auth, Project, Database)
+    - ✅ 프론트엔드 컴포넌트 테스트 (18개 - Jest, React Testing Library)
+    - ✅ 프론트엔드 E2E 테스트 (31개 - Playwright)
+    - ✅ 반응형 디자인 테스트 (33 시나리오)
+    - ✅ JaCoCo 커버리지 측정 (67% 전체, Service: 79%, Security: 95%)
 
 ### ⚠️ 알려진 이슈 및 제한사항
 1. **데이터베이스 설정**:
@@ -263,11 +326,15 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    - Phase 9에서 관계형 DB의 Relationship을 Neo4j로 마이그레이션 예정
 
 ### 📋 다음 단계 (우선순위 순)
-1. **Phase 10 (계속)**: 고급 기능 및 최적화 (일부 완료, 지속적 개선 중)
-   - ✅ 다크 모드, 키보드 단축키, 접근성 완료
-   - ✅ Refresh Token, 테스트 인프라 완료
+1. **Phase 10 (대부분 완료)**: 고급 기능 및 최적화
+   - ✅ 디자인 시스템 구축 (Task 86)
+   - ✅ 반응형 디자인 (Task 87)
+   - ✅ 다크 모드 완성 (Task 88)
+   - ✅ UX 개선 - 로딩, 키보드 단축키, 접근성 (Task 89)
+   - ✅ 백엔드 테스트 (Task 94, 95)
+   - ✅ 프론트엔드 테스트 (Task 96)
    - ⏳ 성능 최적화 (API 캐싱, DB 쿼리 최적화)
-   - ⏳ 프론트엔드 E2E 테스트
+   - ⏳ 추가 기능 (TTS, 이미지 생성 등)
 2. **Phase 7**: Vector DB 및 의미 검색 (선택적)
 3. **Phase 8**: Docker 및 배포 자동화 (PostgreSQL 마이그레이션, CI/CD)
 4. **Phase 9**: Neo4j GraphDB 전환 (선택적)
