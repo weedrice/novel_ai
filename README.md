@@ -46,22 +46,22 @@ Novel AI는 소설과 웹툰 등 스토리텔링 콘텐츠의 기획과 제작�
 | 서비스 | 경로 | 기술 스택 | 주요 역할 |
 | --- | --- | --- | --- |
 | 프론트엔드 | `frontend/` | Next.js 15, React 18, TypeScript | 캐릭터/에피소드 관리, 장면 편집, 시나리오 생성 요청 UI |
-| API 서버 | `api-server/` | Spring Boot 3.4, Java 25, Gradle 8 | 비즈니스 로직, 캐릭터/대사/버전 CRUD, LLM 서버 연동 |
+| API 서버 | `api-server/` | Spring Boot 3.4, Java 21, Gradle 8 | 비즈니스 로직, 캐릭터/대사/버전 CRUD, LLM 서버 연동 |
 | LLM 서버 | `llm-server/` | FastAPI, Python 3.11 | 멀티 LLM 프로바이더 통합, 프롬프트 생성 및 시나리오 생성 |
 
 각 서비스는 독립적으로 배포할 수 있으며, 내부 통신은 REST API 혹은 gRPC(선택 사항)로 확장 가능합니다.
 
 ## 기술 스택
-- **프론트엔드**: Next.js 15, React 18, TypeScript, Tailwind CSS
-- **백엔드**: Spring Boot 3.4 (Java 25), Spring Data JPA/Hibernate, Gradle 8
+- **프론트엔드**: Next.js 15, React 18, TypeScript, Tailwind CSS v4
+- **백엔드**: Spring Boot 3.4 (Java 21), Spring Data JPA/Hibernate, Gradle 8, Spring Security 6
 - **LLM 서비스**: FastAPI, Python 3.11, 멀티 프로바이더 (OpenAI GPT, Anthropic Claude, Google Gemini)
 - **인프라**: Docker, Docker Compose, (예정) Kubernetes, GitHub Actions 기반 CI/CD
-- **데이터베이스**: H2 (개발 환경), PostgreSQL (예정)
+- **데이터베이스**: H2 (개발 환경), PostgreSQL (프로덕션)
 
 ## 사전 요구 사항
 - Docker 및 Docker Compose (권장)
 - Node.js 20 이상과 npm (개별 실행 시)
-- Java 25 이상 (개별 실행 시)
+- Java 21 이상 (개별 실행 시, Gradle toolchain이 자동으로 감지/다운로드)
 - Python 3.11 이상 (개별 실행 시)
 - LLM API 키 (선택 사항, 시나리오 생성 기능 사용 시):
   - OpenAI API Key (GPT 사용 시)
@@ -187,7 +187,7 @@ pytest
 
 ## 현재 구현 상태
 
-### ✅ 완료된 기능 (2025-10-29 기준)
+### ✅ 완료된 기능 (2025-10-31 기준)
 - **Phase 0-6 완료**: 프로젝트 초기 설정, 도메인 모델 구축, 관계 그래프 시각화, LLM 연동, 시나리오 생성, 스크립트 분석, 사용자 인증 및 프로젝트 관리
 - **Phase 10 일부 완료**: UI/UX 개선, 인증 고도화, 데모 모드, 테스트 인프라
 - **백엔드 (api-server)**:
@@ -238,7 +238,13 @@ pytest
   - LLM 기반 스크립트 분석 (캐릭터, 장면, 대사, 관계 추출)
   - Fallback 더미 응답 시스템
 
-### 🔧 최근 수정 사항 (2025-10-30)
+### 🔧 최근 수정 사항 (2025-10-31)
+- **Gradle 환경 설정 개선**:
+  - gradle.properties에서 하드코딩된 Java 경로 제거
+  - Gradle toolchain 자동 감지/다운로드 활성화
+  - PC 환경에 독립적인 빌드 설정 구축
+
+- **이전 수정 사항 (2025-10-30)**:
 - **Phase 6 구현 완료**: 사용자 인증 및 프로젝트 관리 시스템
   - **백엔드 인증**:
     - User 엔티티 및 UserRepository 구현
