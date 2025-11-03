@@ -1,0 +1,103 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment || 'production' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push all images
+        run: |
+          # Build and push API Server
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api-server:latest \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api-server:${{ github.sha }} \
+            --push \
+            ./api-server
+
+          # Build and push Frontend
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:latest \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:${{ github.sha }} \
+            --push \
+            ./frontend
+
+          # Build and push LLM Server
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/llm-server:latest \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/llm-server:${{ github.sha }} \
+            --push \
+            ./llm-server
+
+      # ==================================================
+      # Optional: Deploy to cloud platform
+      # ==================================================
+      # Uncomment and configure for your deployment target
+
+      # - name: Deploy to AWS ECS (Example)
+      #   run: |
+      #     # Install AWS CLI
+      #     pip install awscli
+      #     # Update ECS service
+      #     aws ecs update-service \
+      #       --cluster novel-ai-cluster \
+      #       --service novel-ai-service \
+      #       --force-new-deployment
+
+      # - name: Deploy to Kubernetes (Example)
+      #   run: |
+      #     # Install kubectl
+      #     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      #     chmod +x kubectl
+      #     # Apply manifests
+      #     ./kubectl apply -f k8s/
+
+      - name: Deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit SHA:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Images pushed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api-server:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/llm-server:latest\`" >> $GITHUB_STEP_SUMMARY
