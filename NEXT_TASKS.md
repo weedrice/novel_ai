@@ -1805,13 +1805,49 @@
 
 ---
 
-#### Task 93: 프론트엔드 최적화
-- [ ] 코드 스플리팅
-- [ ] 이미지 최적화 (Next.js Image)
-- [ ] 번들 크기 분석 및 축소
-- [ ] Lazy Loading 적용
+#### Task 93: 프론트엔드 최적화 ✅
+- [x] 코드 스플리팅 (Webpack splitChunks 설정)
+- [x] 이미지 최적화 (AVIF, WebP 포맷 지원)
+- [x] 번들 크기 분석 및 축소 (@next/bundle-analyzer 도입)
+- [x] Lazy Loading 적용 (React Flow 및 라이브러리별 청크 분리)
 
 **예상 소요 시간**: 2시간
+**실제 소요 시간**: 약 1.5시간
+**완료 날짜**: 2025-11-03
+
+**구현 내용**:
+- Next.js 설정 최적화 (next.config.ts)
+  - Bundle Analyzer 설정 (@next/bundle-analyzer)
+  - 이미지 최적화 (AVIF, WebP 포맷 자동 변환)
+  - 실험적 기능: optimizePackageImports (아이콘 라이브러리 tree-shaking)
+- Webpack 코드 스플리팅 전략
+  - React 핵심 라이브러리 분리 (137KB chunk, priority 40)
+  - React Flow 라이브러리 분리 (88KB chunk, priority 35)
+  - 기타 라이브러리 패키지별 분리 (lodash 38KB, axios 35KB, dagre 29KB 등)
+
+**최적화 결과**:
+- React Flow (88KB)를 별도 청크로 분리 → /graph 페이지만 로드
+- 다른 페이지들은 88KB 절약 (필요 없는 라이브러리 미로드)
+- 라이브러리별 청크 분리로 브라우저 캐싱 효율 향상
+- React 코어 (137KB)는 한 번만 로드 후 모든 페이지에서 재사용
+
+**빌드 결과**:
+```
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    5.59 kB         168 kB
+├ ○ /characters                          4.51 kB         167 kB
+├ ○ /dialogue-stream                     4.03 kB         166 kB
+├ ○ /graph                                 81 kB         243 kB (React Flow 포함)
+├ ○ /script-analyzer                     3.91 kB         166 kB
+└ ○ /scenes                               3.2 kB         165 kB
++ First Load JS shared by all             148 kB
+```
+
+**주요 청크 (압축 전)**:
+- lib.next-d36f51ff1e144a20.js: 492K (Next.js 코어)
+- react-vendors-e2072aad742ecafc.js: 137K (React 핵심)
+- reactflow-c861b4de9d09cacc.js: 88K (그래프 전용)
+- lib.lodash, lib.axios, lib.dagre 등 개별 분리
 
 ---
 
