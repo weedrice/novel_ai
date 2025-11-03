@@ -67,20 +67,26 @@ public class SceneService {
 
     /**
      * 장면에 참여하는 캐릭터 목록 조회
+     * N+1 문제 해결: IN 쿼리로 한 번에 조회
      */
     public List<Character> getParticipants(Scene scene) {
         if (scene.getParticipants() == null || scene.getParticipants().trim().isEmpty()) {
             return new ArrayList<>();
         }
 
-        String[] characterIds = scene.getParticipants().split(",");
-        log.debug("Fetching participants for scene {}: {}", scene.getId(), Arrays.toString(characterIds));
-
-        return Arrays.stream(characterIds)
+        List<String> characterIds = Arrays.stream(scene.getParticipants().split(","))
                 .map(String::trim)
-                .map(characterId -> characterRepository.findByCharacterId(characterId).orElse(null))
-                .filter(character -> character != null)
+                .filter(id -> !id.isEmpty())
                 .collect(Collectors.toList());
+
+        if (characterIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        log.debug("Fetching participants for scene {} using IN query: {}", scene.getId(), characterIds);
+
+        // N+1 문제 해결: 한 번의 IN 쿼리로 모든 캐릭터 조회
+        return characterRepository.findByCharacterIdIn(characterIds);
     }
 
     /**

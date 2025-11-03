@@ -8,7 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "episodes")
+@Table(name = "episodes", indexes = {
+    @Index(name = "idx_episode_project_id", columnList = "project_id"),
+    @Index(name = "idx_episode_order_project", columnList = "episodeOrder,project_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
