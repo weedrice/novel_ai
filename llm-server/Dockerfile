@@ -2,6 +2,11 @@ FROM python:3.11.9-slim
 
 WORKDIR /app
 
+# Set UTF-8 encoding
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PYTHONIOENCODING=utf-8
+
 # Install dependencies including CA certificates for SSL
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

@@ -2,6 +2,10 @@ FROM node:20.11.1-alpine
 
 WORKDIR /app
 
+# Set UTF-8 encoding
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
 # Copy package files
 COPY package.json package-lock.json* ./
 

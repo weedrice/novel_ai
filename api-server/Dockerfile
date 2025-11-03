@@ -23,6 +23,11 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
+# Set UTF-8 encoding
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    JAVA_OPTS="-Dfile.encoding=UTF-8"
+
 # Copy the built jar from builder
 COPY --from=builder /app/build/libs/*.jar app.jar
 
@@ -33,4 +38,4 @@ RUN apt-get update \
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-jar", "app.jar"]

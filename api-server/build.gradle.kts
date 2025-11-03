@@ -55,8 +55,14 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+// UTF-8 encoding for Java compilation
+tasks.withType<JavaCompile> {
+    options.encoding = "UTF-8"
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
+    systemProperty("file.encoding", "UTF-8")
     finalizedBy(tasks.jacocoTestReport) // 테스트 실행 후 자동으로 리포트 생성
 }
 
