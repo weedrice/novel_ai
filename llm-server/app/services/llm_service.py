@@ -1,11 +1,12 @@
 """
 LLM 서비스
 여러 LLM 프로바이더(OpenAI, Claude, Gemini)를 지원합니다.
+Task 92: 스트리밍 응답 지원 추가
 """
 
 import os
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, AsyncIterator
 from openai import OpenAI, OpenAIError
 import anthropic
 import google.generativeai as genai
@@ -376,3 +377,170 @@ class LLMService:
             providers.append("gemini")
 
         return providers if providers else ["fallback"]
+
+    # ============================================================
+    # Task 92: 스트리밍 응답 메서드
+    # ============================================================
+
+    async def generate_dialogue_stream(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = None,
+        temperature: float = None,
+        provider: Optional[str] = None
+    ) -> AsyncIterator[str]:
+        """
+        LLM을 호출하여 스트리밍 방식으로 대사 생성
+
+        Args:
+            system_prompt: 시스템 프롬프트 (캐릭터 페르소나)
+            user_prompt: 사용자 프롬프트 (대사 생성 요청)
+            max_tokens: 최대 토큰 수 (선택적)
+            temperature: 온도 파라미터 (선택적)
+            provider: LLM 프로바이더 (openai, claude, gemini) - 선택적
+
+        Yields:
+            생성된 텍스트 청크
+        """
+        provider = provider or self.default_provider
+        logger.info(f"Using LLM provider for streaming: {provider}")
+
+        if provider == "openai":
+            async for chunk in self._stream_with_openai(system_prompt, user_prompt, max_tokens, temperature):
+                yield chunk
+        elif provider == "claude":
+            async for chunk in self._stream_with_claude(system_prompt, user_prompt, max_tokens, temperature):
+                yield chunk
+        elif provider == "gemini":
+            async for chunk in self._stream_with_gemini(system_prompt, user_prompt, max_tokens, temperature):
+                yield chunk
+        else:
+            logger.error(f"Unknown provider: {provider}, using fallback")
+            yield "죄송합니다. 선택한 LLM 프로바이더를 사용할 수 없습니다."
+
+    async def _stream_with_openai(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = None,
+        temperature: float = None
+    ) -> AsyncIterator[str]:
+        """OpenAI GPT로 스트리밍 대사 생성"""
+        if not self.openai_client:
+            logger.warning("OpenAI client not available, using fallback")
+            yield "OpenAI를 사용할 수 없습니다."
+            return
+
+        try:
+            logger.info(f"Streaming from OpenAI: model={self.openai_model}")
+
+            stream = self.openai_client.chat.completions.create(
+                model=self.openai_model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                max_tokens=max_tokens or self.openai_max_tokens,
+                temperature=temperature or self.openai_temperature,
+                stream=True
+            )
+
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    logger.debug(f"OpenAI stream chunk: {content}")
+                    yield content
+
+        except OpenAIError as e:
+            logger.error(f"OpenAI API error during streaming: {e}")
+            yield f"\n\n[오류: {str(e)}]"
+        except Exception as e:
+            logger.error(f"Unexpected error with OpenAI streaming: {e}")
+            yield f"\n\n[오류: {str(e)}]"
+
+    async def _stream_with_claude(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = None,
+        temperature: float = None
+    ) -> AsyncIterator[str]:
+        """Anthropic Claude로 스트리밍 대사 생성"""
+        if not self.anthropic_client:
+            logger.warning("Anthropic client not available, using fallback")
+            yield "Claude를 사용할 수 없습니다."
+            return
+
+        try:
+            logger.info(f"Streaming from Claude: model={self.anthropic_model}")
+
+            with self.anthropic_client.messages.stream(
+                model=self.anthropic_model,
+                max_tokens=max_tokens or self.anthropic_max_tokens,
+                temperature=temperature or self.anthropic_temperature,
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": user_prompt}
+                ]
+            ) as stream:
+                for text in stream.text_stream:
+                    logger.debug(f"Claude stream chunk: {text}")
+                    yield text
+
+        except anthropic.APIError as e:
+            logger.error(f"Anthropic API error during streaming: {e}")
+            yield f"\n\n[오류: {str(e)}]"
+        except Exception as e:
+            logger.error(f"Unexpected error with Claude streaming: {e}")
+            yield f"\n\n[오류: {str(e)}]"
+
+    async def _stream_with_gemini(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = None,
+        temperature: float = None
+    ) -> AsyncIterator[str]:
+        """Google Gemini로 스트리밍 대사 생성"""
+        if not self.gemini_model_instance:
+            logger.warning("Gemini client not available, using fallback")
+            yield "Gemini를 사용할 수 없습니다."
+            return
+
+        try:
+            logger.info(f"Streaming from Gemini: model={self.gemini_model}")
+
+            full_prompt = f"{system_prompt}\n\n{user_prompt}"
+
+            generation_config = genai.GenerationConfig(
+                temperature=temperature or self.gemini_temperature,
+                max_output_tokens=max_tokens or self.gemini_max_tokens,
+            )
+
+            # Safety settings
+            safety_settings = [
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "block_none"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "block_none"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "block_none"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "block_none"}
+            ]
+
+            response = self.gemini_model_instance.generate_content(
+                full_prompt,
+                generation_config=generation_config,
+                safety_settings=safety_settings,
+                stream=True
+            )
+
+            for chunk in response:
+                if chunk.text:
+                    logger.debug(f"Gemini stream chunk: {chunk.text}")
+                    yield chunk.text
+
+        except google_exceptions.GoogleAPIError as e:
+            logger.error(f"Google API error during streaming: {e}")
+            yield f"\n\n[오류: {str(e)}]"
+        except Exception as e:
+            logger.error(f"Unexpected error with Gemini streaming: {e}")
+            yield f"\n\n[오류: {str(e)}]"

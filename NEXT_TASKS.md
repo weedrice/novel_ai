@@ -1742,37 +1742,66 @@
 
 ### 9.2 성능 최적화
 
-#### Task 90: API 응답 캐싱
-- [ ] Redis 설치 및 설정
-- [ ] Spring Cache 설정
-- [ ] 자주 조회되는 데이터 캐싱
-  - 캐릭터 목록
-  - 에피소드 목록
-- [ ] 캐시 무효화 전략
+#### Task 90: API 응답 캐싱 ✅
+- [x] Redis 설치 및 설정
+  - docker-compose.yml에 Redis 서비스 추가
+  - Redis 7-alpine 이미지 사용
+  - 메모리 제한 및 LRU 정책 설정
+- [x] Spring Cache 설정
+  - CacheConfig.java 생성 (RedisCacheManager 설정)
+  - JSON 직렬화 설정 (Jackson)
+  - TTL 10분 설정
+- [x] 자주 조회되는 데이터 캐싱
+  - 캐릭터 목록 (@Cacheable on CharacterService.getAllCharacters)
+  - 에피소드 목록 (@Cacheable on EpisodeService.getAllEpisodes)
+  - 프로젝트별 캐시 키 설정
+- [x] 캐시 무효화 전략
+  - @CacheEvict(allEntries = true) on CUD operations
+  - create/update/delete 시 자동 캐시 무효화
 
-**예상 소요 시간**: 2시간
-
----
-
-#### Task 91: 데이터베이스 쿼리 최적화
-- [ ] N+1 문제 해결
-  - @EntityGraph 사용
-  - Fetch Join 적용
-- [ ] 인덱스 추가
-  - 자주 검색되는 컬럼
-  - 외래 키
-- [ ] 쿼리 성능 측정 및 개선
-
-**예상 소요 시간**: 3시간
+**실제 소요 시간**: 1.5시간
+**완료 날짜**: 2025-11-23
 
 ---
 
-#### Task 92: LLM 응답 스트리밍
-- [ ] Server-Sent Events (SSE) 구현
-- [ ] LLM 응답을 실시간으로 스트리밍
-- [ ] 프론트엔드에서 스트리밍 수신 및 표시
+#### Task 91: 데이터베이스 쿼리 최적화 ✅
+- [x] N+1 문제 해결
+  - @EntityGraph 사용 (EpisodeRepository, SceneRepository)
+  - IN 쿼리로 변환 (CharacterRepository.findByCharacterIdIn)
+  - SceneService.getParticipants() 최적화 (N+1 → 1 query)
+- [x] 인덱스 추가
+  - Character: idx_character_id, idx_character_project_id, idx_character_id_project
+  - Episode: idx_episode_project_id, idx_episode_order_project
+  - Scene: idx_scene_episode_id, idx_scene_number_episode
+  - Dialogue: idx_dialogue_scene_id, idx_dialogue_character_id, idx_dialogue_order_scene
+- [x] 쿼리 성능 측정 및 개선
+  - 복합 인덱스로 정렬 쿼리 최적화
 
-**예상 소요 시간**: 3시간
+**실제 소요 시간**: 2시간
+**완료 날짜**: 2025-11-23
+
+---
+
+#### Task 92: LLM 응답 스트리밍 ✅
+- [x] Server-Sent Events (SSE) 구현
+  - LLM 서버: FastAPI StreamingResponse 사용
+  - API 서버: Spring WebFlux Flux<ServerSentEvent> 사용
+- [x] LLM 응답을 실시간으로 스트리밍
+  - OpenAI, Claude, Gemini 모두 스트리밍 지원
+  - llm_service.py에 generate_dialogue_stream 메서드 추가
+- [x] 프론트엔드에서 스트리밍 수신 및 표시
+  - /dialogue-stream 페이지 생성
+  - Fetch API로 SSE 스트림 수신
+  - 실시간 텍스트 표시 및 커서 애니메이션
+
+**실제 소요 시간**: 3시간
+**완료 날짜**: 2025-11-23
+
+**구현 내용**:
+- LLM Server: POST /gen/suggest-stream 엔드포인트 추가
+- API Server: POST /dialogue/suggest-stream 엔드포인트 추가 (WebFlux 의존성 추가)
+- Frontend: /dialogue-stream 페이지로 스트리밍 데모 제공
+- Home 페이지에 "실시간 대사 생성" 링크 추가
 
 ---
 

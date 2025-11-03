@@ -32,6 +32,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-hibernate6:2.15.3")
 
+    // WebFlux for streaming support (Task 92)
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+
     // Cache & Redis (Task 90)
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")

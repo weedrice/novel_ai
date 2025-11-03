@@ -124,6 +124,10 @@ export default function Home() {
             <div className="text-xl font-semibold mb-2">📝 스크립트 분석</div>
             <p className="text-pink-100 text-sm">소설·시나리오에서 캐릭터와 관계를 추출합니다.</p>
           </a>
+          <a href="/dialogue-stream" className="block p-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md transition-colors duration-200">
+            <div className="text-xl font-semibold mb-2">⚡ 실시간 대사 생성</div>
+            <p className="text-indigo-100 text-sm">스트리밍으로 LLM 대사 생성을 실시간 확인합니다.</p>
+          </a>
         </div>
 
         {error && (

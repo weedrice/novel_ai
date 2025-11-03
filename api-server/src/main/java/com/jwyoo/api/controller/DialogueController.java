@@ -12,8 +12,11 @@ import com.jwyoo.api.service.LlmClient;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
@@ -38,6 +41,17 @@ public class DialogueController {
     @PostMapping("/suggest")
     public Map<String, Object> suggest(@RequestBody @Valid SuggestRequest request) {
         return llmClient.suggest(request);
+    }
+
+    /**
+     * Task 92: 스트리밍 방식으로 LLM 대사 제안
+     * Server-Sent Events를 통해 실시간으로 생성 중인 대사를 전송
+     */
+    @PostMapping(value = "/suggest-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<Map<String, Object>>> suggestStream(@RequestBody @Valid SuggestRequest request) {
+        log.info("Streaming dialogue suggestion request: speakerId={}, intent={}",
+                request.speakerId(), request.intent());
+        return llmClient.suggestStream(request);
     }
 
     // ==================== 대사 CRUD API ====================

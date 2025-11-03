@@ -38,7 +38,22 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJkZW1vIiwiaWF0IjoxNzYxMjkxMjI2LCJleHAiOjE3NjEzNzc2MjZ9._S--pWY5FWBoJTr0H8FWmEN5f6IFWWdC_G_L69NxlP4SiOUY4kJhyTSZeBJkifB6mjc5HcXA1wa8NTBGVBW5HQ\")",
       "WebSearch",
       "Bash(./gradlew test:*)",
-      "Bash(./gradlew clean:*)"
+      "Bash(./gradlew clean:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm test)",
+      "Bash(npm run test:e2e:*)",
+      "Bash(git gc:*)",
+      "Bash(docker-compose:*)",
+      "Bash(if [ ! -f .env ])",
+      "Bash(then cp .env.example .env)",
+      "Bash(else echo \".env file already exists\")",
+      "Bash(fi:*)",
+      "Bash(if [ ! -f llm-server/.env ])",
+      "Bash(then cp llm-server/.env.example llm-server/.env)",
+      "Bash(else echo \"llm-server/.env already exists\")",
+      "Bash(./gradlew:*)",
+      "Bash(java -version:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
