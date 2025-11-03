@@ -5,6 +5,8 @@ import com.jwyoo.api.entity.Project;
 import com.jwyoo.api.repository.EpisodeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,7 @@ import java.util.List;
 
 /**
  * 에피소드 비즈니스 로직을 처리하는 서비스
+ * Task 90: Redis 캐싱 적용
  */
 @Slf4j
 @Service
@@ -24,10 +27,12 @@ public class EpisodeService {
 
     /**
      * 모든 에피소드 조회 (프로젝트별)
+     * Task 90: Redis 캐싱 적용 - 10분 TTL
      */
+    @Cacheable(value = "episodes", key = "#root.method.name + '_' + @projectService.getCurrentProject().id")
     public List<Episode> getAllEpisodes() {
         Project currentProject = projectService.getCurrentProject();
-        log.debug("Fetching all episodes for project: {}", currentProject.getId());
+        log.debug("Fetching all episodes for project: {} (from DB, not cache)", currentProject.getId());
         List<Episode> episodes = episodeRepository.findByProjectOrderByEpisodeOrderAsc(currentProject);
         log.info("Fetched {} episodes", episodes.size());
         return episodes;
@@ -50,8 +55,10 @@ public class EpisodeService {
 
     /**
      * 새로운 에피소드 생성 (현재 프로젝트에 자동 연결)
+     * Task 90: 캐시 무효화
      */
     @Transactional
+    @CacheEvict(value = "episodes", allEntries = true)
     public Episode createEpisode(Episode episode) {
         Project currentProject = projectService.getCurrentProject();
         log.info("Creating new episode: title={}, order={}, project={}",
@@ -67,8 +74,10 @@ public class EpisodeService {
 
     /**
      * 에피소드 수정 (프로젝트별)
+     * Task 90: 캐시 무효화
      */
     @Transactional
+    @CacheEvict(value = "episodes", allEntries = true)
     public Episode updateEpisode(Long id, Episode episode) {
         log.info("Updating episode: id={}, newTitle={}, newOrder={}",
             id, episode.getTitle(), episode.getEpisodeOrder());
@@ -89,8 +98,10 @@ public class EpisodeService {
 
     /**
      * 에피소드 삭제 (프로젝트별)
+     * Task 90: 캐시 무효화
      */
     @Transactional
+    @CacheEvict(value = "episodes", allEntries = true)
     public void deleteEpisode(Long id) {
         log.info("Deleting episode: id={}", id);
 

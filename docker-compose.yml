@@ -34,10 +34,14 @@ services:
       - JWT_ACCESS_TOKEN_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION:-900000}
       - JWT_REFRESH_TOKEN_EXPIRATION=${JWT_REFRESH_TOKEN_EXPIRATION:-604800000}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT:-6379}
     networks:
       - app-network
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       llm-server:
         condition: service_started

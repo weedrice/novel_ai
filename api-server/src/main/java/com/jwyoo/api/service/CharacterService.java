@@ -7,6 +7,8 @@ import com.jwyoo.api.repository.CharacterRepository;
 import com.jwyoo.api.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +16,7 @@ import java.util.List;
 
 /**
  * 캐릭터 비즈니스 로직을 처리하는 서비스
+ * Task 90: Redis 캐싱 적용
  */
 @Slf4j
 @Service
@@ -27,10 +30,12 @@ public class CharacterService {
 
     /**
      * 모든 캐릭터 조회 (프로젝트별)
+     * Task 90: Redis 캐싱 적용 - 10분 TTL
      */
+    @Cacheable(value = "characters", key = "#root.method.name + '_' + @projectService.getCurrentProject().id")
     public List<Character> getAllCharacters() {
         Project currentProject = projectService.getCurrentProject();
-        log.debug("Fetching all characters for project: {}", currentProject.getId());
+        log.debug("Fetching all characters for project: {} (from DB, not cache)", currentProject.getId());
         List<Character> characters = characterRepository.findByProject(currentProject);
         log.info("Fetched {} characters", characters.size());
         return characters;
@@ -69,8 +74,10 @@ public class CharacterService {
 
     /**
      * 새로운 캐릭터 생성 (현재 프로젝트에 자동 연결)
+     * Task 90: 캐시 무효화
      */
     @Transactional
+    @CacheEvict(value = "characters", allEntries = true)
     public Character createCharacter(Character character) {
         Project currentProject = projectService.getCurrentProject();
         log.info("Creating new character: characterId={}, name={}, project={}",
@@ -93,8 +100,10 @@ public class CharacterService {
 
     /**
      * 캐릭터 정보 수정 (프로젝트별)
+     * Task 90: 캐시 무효화
      */
     @Transactional
+    @CacheEvict(value = "characters", allEntries = true)
     public Character updateCharacter(Long id, Character character) {
         log.info("Updating character: id={}, newName={}", id, character.getName());
         Character existing = getCharacterById(id); // 이미 프로젝트 확인 포함
@@ -118,8 +127,10 @@ public class CharacterService {
 
     /**
      * 캐릭터 삭제 (프로젝트별)
+     * Task 90: 캐시 무효화
      */
     @Transactional
+    @CacheEvict(value = "characters", allEntries = true)
     public void deleteCharacter(Long id) {
         log.info("Deleting character: id={}", id);
 
@@ -133,8 +144,10 @@ public class CharacterService {
 
     /**
      * 말투 프로필 수정
+     * Task 90: 캐시 무효화
      */
     @Transactional
+    @CacheEvict(value = "characters", allEntries = true)
     public Character updateSpeakingProfile(Long id, Character profileUpdate) {
         log.info("Updating speaking profile for character: id={}", id);
         Character existing = getCharacterById(id);
