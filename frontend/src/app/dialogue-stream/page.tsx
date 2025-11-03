@@ -300,7 +300,7 @@ export default function DialogueStreamPage() {
                   navigator.clipboard.writeText(streamingText);
                   alert('클립보드에 복사되었습니다!');
                 }}
-                variant="outline"
+                variant="secondary"
                 className="w-full"
               >
                 클립보드에 복사
