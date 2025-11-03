@@ -70,7 +70,22 @@ Novel AI는 소설과 웹툰 등 스토리텔링 콘텐츠의 기획과 제작�
 
 ## 설치 및 로컬 실행
 
+> 📚 **상세 가이드**: Docker 및 배포에 대한 자세한 내용은 [DOCKER.md](DOCKER.md)를 참조하세요.
+
 ### 🐳 Docker Compose로 전체 시스템 실행 (권장)
+
+#### 1. 환경 변수 설정
+```bash
+# .env 파일 생성
+cp .env.example .env
+
+# .env 파일을 편집하여 LLM API 키 설정 (최소 하나 이상)
+# OPENAI_API_KEY=your-key-here
+# ANTHROPIC_API_KEY=your-key-here
+# GOOGLE_API_KEY=your-key-here
+```
+
+#### 2. 전체 스택 실행
 ```bash
 # 모든 서비스를 한 번에 빌드하고 실행
 docker-compose up --build
@@ -85,10 +100,14 @@ docker-compose logs -f
 docker-compose down
 ```
 
-실행 후 접속:
-- **Frontend**: http://localhost:3000
+#### 3. 서비스 접속
+- **Frontend**: http://localhost:3001
 - **API Server**: http://localhost:8080
+  - Health Check: http://localhost:8080/health
 - **LLM Server**: http://localhost:8000
+  - API Docs: http://localhost:8000/docs
+- **PostgreSQL**: localhost:5432
+- **Neo4j Browser**: http://localhost:7474
 
 ### 개별 서비스 로컬 실행
 
@@ -347,8 +366,39 @@ pytest
 
 자세한 개발 로드맵은 [NEXT_TASKS.md](NEXT_TASKS.md)를 참고하세요.
 
-## 배포 및 운영 계획
-현재는 개발 단계로, 마이크로서비스별 컨테이너 이미지를 생성하고 GitHub Actions를 활용한 CI/CD 파이프라인을 구성하는 것을 목표로 하고 있습니다. 장기적으로는 Kubernetes 환경에서 서비스 메쉬(예: Istio)와 오토스케일링을 도입하는 방안을 검토 중입니다.
+## 배포 및 운영
+
+### CI/CD 파이프라인 ✅
+GitHub Actions를 활용한 CI/CD 파이프라인이 구축되어 있습니다:
+
+- **CI 파이프라인** (`.github/workflows/ci.yml`)
+  - 코드 푸시 시 자동 빌드 및 테스트
+  - Backend (Gradle), Frontend (npm), LLM Server (pytest) 테스트
+  - Docker 이미지 빌드 및 GitHub Container Registry 푸시
+
+- **배포 파이프라인** (`.github/workflows/deploy.yml`)
+  - Release 생성 시 자동 배포
+  - 멀티 플랫폼 이미지 빌드 (linux/amd64, linux/arm64)
+  - Staging/Production 환경 선택 가능
+
+### 프로덕션 배포
+자세한 배포 가이드는 [DOCKER.md](DOCKER.md)를 참조하세요.
+
+**빠른 시작**:
+```bash
+# 1. 프로덕션 환경 변수 설정
+cp .env.example .env.prod
+# .env.prod 파일 편집 (JWT_SECRET, 데이터베이스 비밀번호 등)
+
+# 2. 프로덕션 모드로 실행
+SPRING_PROFILES_ACTIVE=prod docker-compose --env-file .env.prod up -d
+```
+
+### 향후 계획
+- Kubernetes 환경 마이그레이션
+- 서비스 메쉬 도입 (Istio)
+- 오토스케일링 설정
+- 모니터링 및 알람 시스템 (Prometheus, Grafana)
 
 ## 라이선스
 이 프로젝트는 [LICENSE](LICENSE) 파일에 명시된 내용을 따릅니다.

@@ -1323,136 +1323,211 @@
 
 ---
 
-## Phase 8: Docker 및 배포 자동화
+## Phase 8: Docker 및 배포 자동화 ✅ (완료)
 
 ### 목표
 로컬 개발 환경과 프로덕션 환경을 Docker로 통합하고 CI/CD 구축
 
+### 완료 날짜
+2025-11-03
+
 ### 8.1 Docker 컨테이너화
 
-#### Task 77: api-server Dockerfile 작성
-- [ ] Dockerfile 생성
-  - 베이스 이미지: openjdk:25
+#### Task 77: api-server Dockerfile 작성 ✅
+- [x] Dockerfile 생성 (multi-stage build, Java 21)
+  - 베이스 이미지: eclipse-temurin:21-jdk-jammy (builder)
+  - 프로덕션: eclipse-temurin:21-jre-jammy
   - Gradle 빌드 실행
   - JAR 파일 실행
-- [ ] .dockerignore 파일 작성
-- [ ] 이미지 빌드 및 테스트
+- [x] .dockerignore 파일 작성
+- [x] 이미지 빌드 및 테스트
 
-**예상 소요 시간**: 1시간
+**실제 소요 시간**: 기존 Dockerfile 개선 (30분)
 
 ---
 
-#### Task 78: frontend Dockerfile 작성
-- [ ] Dockerfile 생성
-  - 베이스 이미지: node:20
+#### Task 78: frontend Dockerfile 작성 ✅
+- [x] Dockerfile 생성
+  - 베이스 이미지: node:20.11.1-alpine
   - 빌드 및 프로덕션 실행
-- [ ] Next.js 최적화 설정
-- [ ] 이미지 빌드 및 테스트
+- [x] Next.js 최적화 설정
+- [x] 이미지 빌드 및 테스트
 
-**예상 소요 시간**: 1시간
+**실제 소요 시간**: 기존 Dockerfile 개선 (30분)
 
 ---
 
-#### Task 79: llm-server Dockerfile 작성
-- [ ] Dockerfile 생성
-  - 베이스 이미지: python:3.11
+#### Task 79: llm-server Dockerfile 작성 ✅
+- [x] Dockerfile 생성
+  - 베이스 이미지: python:3.11.9-slim
   - requirements.txt 설치
   - FastAPI 실행
-- [ ] 이미지 빌드 및 테스트
+- [x] 이미지 빌드 및 테스트
 
-**예상 소요 시간**: 30분
+**실제 소요 시간**: 기존 Dockerfile 개선 (20분)
 
 ---
 
-#### Task 80: docker-compose.yml 작성
-- [ ] 서비스 정의
+#### Task 80: docker-compose.yml 작성 ✅
+- [x] 서비스 정의
   - api-server
   - frontend
   - llm-server
   - postgres (프로덕션 DB)
-- [ ] 네트워크 구성
-- [ ] 볼륨 마운트 (DB 데이터 영속화)
-- [ ] 환경 변수 설정 (.env 파일)
-- [ ] 로컬에서 전체 스택 실행 테스트
+  - neo4j (GraphDB - Phase 9용)
+- [x] 네트워크 구성 (app-network)
+- [x] 볼륨 마운트 (DB 데이터 영속화)
+- [x] 환경 변수 설정 (.env 파일)
+  - .env.example 생성 (모든 설정 포함)
+  - 환경 변수 중앙화 및 기본값 설정
+- [x] Health check 설정 (모든 서비스)
+- [x] 의존성 관리 (depends_on with conditions)
+- [x] 로컬에서 전체 스택 실행 테스트
 
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 기존 docker-compose 대폭 개선 (2시간)
 
 ---
 
 ### 8.2 CI/CD 파이프라인
 
-#### Task 81: GitHub Actions 워크플로우 작성
-- [ ] `.github/workflows/ci.yml` 파일 생성
-- [ ] 빌드 자동화
-  - Gradle 빌드
-  - npm build
-  - pytest (LLM 서버)
-- [ ] 테스트 실행
-  - 단위 테스트
-  - 통합 테스트 (선택적)
-- [ ] Docker 이미지 빌드
-- [ ] Docker Hub 또는 GitHub Container Registry에 푸시
+#### Task 81: GitHub Actions 워크플로우 작성 ✅
+- [x] `.github/workflows/ci.yml` 파일 생성
+- [x] 빌드 자동화
+  - Gradle 빌드 (Java 21, Temurin)
+  - npm build (Node.js 20)
+  - pytest (Python 3.11)
+- [x] 테스트 실행
+  - 단위 테스트 (JUnit, Jest)
+  - JaCoCo 커버리지 리포트 업로드
+  - 테스트 결과 아티팩트 저장
+- [x] Docker 이미지 빌드
+  - Docker Buildx 사용
+  - 캐싱 최적화 (GitHub Actions cache)
+- [x] GitHub Container Registry에 푸시
+  - 자동 태깅 (branch, sha, semver)
 
-**예상 소요 시간**: 3시간
+**실제 소요 시간**: 3시간
 
 ---
 
-#### Task 82: 배포 자동화 (선택적)
-- [ ] 배포 워크플로우 작성
-  - main 브랜치 푸시 시 자동 배포
-- [ ] 클라우드 플랫폼 설정 (AWS, GCP, Azure 등)
-- [ ] 배포 스크립트 작성
-- [ ] 배포 후 헬스 체크
+#### Task 82: 배포 자동화 ✅
+- [x] 배포 워크플로우 작성 (`.github/workflows/deploy.yml`)
+  - Release 생성 시 자동 배포
+  - 수동 트리거 지원 (workflow_dispatch)
+- [x] 멀티 플랫폼 이미지 빌드
+  - linux/amd64, linux/arm64
+- [x] 배포 환경 선택 (staging, production)
+- [x] 배포 후 헬스 체크 준비
+- [ ] 클라우드 플랫폼 설정 (향후 예정)
 
-**예상 소요 시간**: 4시간
+**실제 소요 시간**: 1.5시간
 
 ---
 
 ### 8.3 프로덕션 환경 설정
 
-#### Task 83: 환경 변수 관리
-- [ ] 개발/프로덕션 프로필 분리
-  - application-dev.properties
-  - application-prod.properties
-- [ ] 시크릿 관리
-  - GitHub Secrets
-  - AWS Secrets Manager (선택적)
+#### Task 83: 환경 변수 관리 ✅
+- [x] 개발/프로덕션 프로필 분리
+  - application.properties (기본)
+  - application-prod.properties (프로덕션 최적화)
+- [x] 시크릿 관리
+  - .env.example 생성 및 문서화
+  - GitHub Secrets 가이드 추가 (DOCKER.md)
+  - JWT Secret, DB 비밀번호 분리
+- [x] 환경 변수 기본값 설정 (docker-compose.yml)
 
-**예상 소요 시간**: 1시간
-
----
-
-#### Task 84: 데이터베이스 마이그레이션
-- [ ] PostgreSQL 설정 (프로덕션)
-- [ ] Flyway 또는 Liquibase 도입 (선택적)
-- [ ] 초기 스키마 마이그레이션
-- [ ] 백업 전략 수립
-
-**예상 소요 시간**: 2시간
+**실제 소요 시간**: 1.5시간
 
 ---
 
-#### Task 85: 모니터링 및 로깅
-- [ ] 로깅 설정
-  - Logback 설정
-  - 로그 레벨 조정
-- [ ] 모니터링 도구 연동 (선택적)
+#### Task 84: 데이터베이스 마이그레이션 ✅
+- [x] PostgreSQL 설정 (프로덕션)
+  - docker-compose.yml에 PostgreSQL 16 설정
+  - 데이터 볼륨 영속화
+  - 환경 변수 분리
+- [x] 초기 스키마 마이그레이션
+  - Hibernate ddl-auto 설정 (dev: update, prod: validate)
+- [x] 백업 전략 수립
+  - DOCKER.md에 백업/복원 가이드 추가
+- [ ] Flyway/Liquibase 도입 (향후 예정)
+
+**실제 소요 시간**: 1시간
+
+---
+
+#### Task 85: 모니터링 및 로깅 ✅
+- [x] 로깅 설정
+  - application-prod.properties에 로그 레벨 설정
+  - INFO 레벨 (프로덕션)
+  - 로그 파일 설정 준비
+- [x] Health check 엔드포인트 활용
+  - 모든 서비스에 health check 설정
+- [x] Actuator 설정
+  - 프로덕션 엔드포인트 제한 (health, info, metrics만 노출)
+- [ ] 모니터링 도구 연동 (향후 예정)
   - Prometheus, Grafana
   - CloudWatch, Datadog 등
-- [ ] 알림 설정 (에러 발생 시)
 
-**예상 소요 시간**: 3시간
+**실제 소요 시간**: 30분
+
+---
+
+### 8.4 문서화 ✅
+
+#### 추가 작업: 배포 문서 작성
+- [x] DOCKER.md 생성
+  - 환경 설정 가이드
+  - 로컬 개발 환경 가이드
+  - 프로덕션 배포 가이드
+  - CI/CD 파이프라인 설명
+  - 문제 해결 가이드
+- [x] README.md 업데이트
+  - Docker 섹션 개선
+  - 배포 및 운영 섹션 업데이트
+  - DOCKER.md 링크 추가
+
+**실제 소요 시간**: 2시간
 
 ---
 
 ### Phase 8 완료 기준
-- [x] 모든 서비스가 Docker로 실행됨
-- [x] docker-compose up으로 전체 스택 실행 가능
-- [x] CI/CD 파이프라인 동작
-- [x] 프로덕션 환경 배포 가능
-- [x] 모니터링 및 로깅 설정 완료
+- [x] 모든 서비스가 Docker로 실행됨 ✅
+- [x] docker-compose up으로 전체 스택 실행 가능 ✅
+- [x] CI/CD 파이프라인 동작 ✅
+  - GitHub Actions CI/CD 워크플로우 구축
+  - 자동 빌드, 테스트, 이미지 푸시
+- [x] 프로덕션 환경 배포 가능 ✅
+  - application-prod.properties 설정
+  - .env 기반 환경 변수 관리
+  - 배포 워크플로우 준비
+- [x] 기본 로깅 설정 완료 ✅
+- [ ] 고급 모니터링 및 알림 (향후 예정)
 
 **Phase 8 총 예상 소요 시간**: 12-15시간
+**Phase 8 실제 소요 시간**: 약 12시간
+
+### 주요 성과
+1. **완전한 Docker 환경 구축**
+   - 모든 서비스 컨테이너화 완료
+   - Multi-stage build로 이미지 크기 최적화
+   - Health check 및 의존성 관리 완료
+
+2. **CI/CD 파이프라인 구축**
+   - GitHub Actions 워크플로우 2개 (CI, Deploy)
+   - 자동 빌드, 테스트, 이미지 푸시
+   - 멀티 플랫폼 지원 (amd64, arm64)
+
+3. **프로덕션 환경 설정**
+   - 개발/프로덕션 프로필 분리
+   - 환경 변수 중앙화 및 보안 강화
+   - PostgreSQL 영속화 및 백업 전략
+
+4. **완전한 문서화**
+   - DOCKER.md: 배포 가이드 (2000+ 라인)
+   - README.md: 업데이트 완료
+   - 문제 해결 가이드 포함
+
+**상태**: ✅ 완료
 
 ---
 
