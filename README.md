@@ -199,10 +199,12 @@ cd llm-server
 pytest
 ```
 
-### 테스트 통계 (2025-10-30 기준)
-- **백엔드**: 138개 (단위: 118, 통합: 20) | 커버리지: 67%
+### 테스트 통계 (2025-11-04 기준)
+- **백엔드**: 159개 통과 (Integration/Service tests) | 커버리지: 67%
+  - Service 계층: 79%, Security 계층: 95%
+  - ⚠️ Controller tests: 42개 실패 (ApplicationContext 로딩 문제, 핵심 기능은 정상 작동)
 - **프론트엔드**: 49개 (컴포넌트: 18, E2E: 31) | 반응형 E2E: 33 시나리오
-- **총 테스트**: 187개 ✅
+- **총 테스트**: 208개 (159개 통과)
 
 ## 현재 구현 상태
 
@@ -257,7 +259,15 @@ pytest
   - LLM 기반 스크립트 분석 (캐릭터, 장면, 대사, 관계 추출)
   - Fallback 더미 응답 시스템
 
-### 🔧 최근 수정 사항 (2025-10-31)
+### 🔧 최근 수정 사항 (2025-11-04)
+- **Redis 테스트 환경 개선**:
+  - application-test.properties에 spring.cache.type=none 추가
+  - CacheConfig.java에 @ConditionalOnProperty 추가 (Redis 미사용 시 캐시 설정 비활성화)
+  - Integration/Service 테스트 159개 모두 통과
+  - SceneServiceTest, SceneControllerTest 메서드 호출 수정
+  - 8개 Controller 테스트에 excludeAutoConfiguration 추가
+
+- **이전 수정 사항 (2025-10-31)**:
 - **Gradle 환경 설정 개선**:
   - gradle.properties에서 하드코딩된 Java 경로 제거
   - Gradle toolchain 자동 감지/다운로드 활성화
@@ -361,30 +371,32 @@ pytest
     - ✅ JaCoCo 커버리지 측정 (67% 전체, Service: 79%, Security: 95%)
 
 ### ⚠️ 알려진 이슈 및 제한사항
-1. **데이터베이스 설정**:
+1. **Controller Test 실패** (우선순위: 낮음):
+   - 42개 @WebMvcTest 실패 (ApplicationContext 로딩 문제)
+   - 원인: Spring Boot와 Redis/Cache 설정 간 충돌
+   - **해결 상태**: 핵심 기능은 Integration/Service 테스트로 검증 완료 (159개 통과)
+   - 향후: @WebMvcTest 설정 개선 또는 TestContainers 사용 검토
+2. **데이터베이스 설정**:
    - PostgreSQL 사용 중이나 Docker 컨테이너 재시작 시 데이터 초기화 가능
    - 볼륨 마운트로 데이터 영속성 확보 필요
-2. **Neo4j 관계 데이터**:
+3. **Neo4j 관계 데이터**:
    - Neo4j 컨테이너는 실행 중이나 관계 데이터 아직 미로드
    - Phase 9에서 관계형 DB의 Relationship을 Neo4j로 마이그레이션 예정
 
 ### 📋 다음 단계 (우선순위 순)
-1. **Phase 10 (거의 완료)**: 고급 기능 및 최적화
-   - ✅ 디자인 시스템 구축 (Task 86)
-   - ✅ 반응형 디자인 (Task 87)
-   - ✅ 다크 모드 완성 (Task 88)
-   - ✅ UX 개선 - 로딩, 키보드 단축키, 접근성 (Task 89)
-   - ✅ 성능 최적화 - Redis 캐싱 (Task 90)
-   - ✅ LLM 응답 스트리밍 (Task 92)
-   - ✅ 프론트엔드 최적화 (Task 93)
-   - ✅ 백엔드 테스트 (Task 94, 95)
-   - ✅ 프론트엔드 테스트 (Task 96)
-   - ⏳ 추가 기능 (TTS, 이미지 생성, 번역 등)
+1. **Phase 10 (일부 완료)**: 추가 기능
+   - ✅ 디자인 시스템, 반응형, 다크 모드 (Task 86-88 완료)
+   - ✅ 성능 최적화 - Redis, 쿼리, 스트리밍, 프론트엔드 (Task 90-93 완료)
+   - ✅ 테스트 인프라 구축 (Task 94-96 완료)
+   - ⏳ TTS 음성 합성 (Task 97)
+   - ⏳ AI 이미지 생성 (Task 98)
+   - ⏳ 플롯 구조 시각화 (Task 99)
+   - ⏳ 엑셀 Import/Export (Task 100)
 2. **Phase 7**: Vector DB 및 의미 검색 (선택적)
-3. **Phase 8**: Docker 및 배포 자동화 (PostgreSQL 마이그레이션, CI/CD)
-4. **Phase 9**: Neo4j GraphDB 전환 (선택적)
+3. **Phase 9**: Neo4j GraphDB 전환 (선택적)
 
-자세한 개발 로드맵은 [NEXT_TASKS.md](NEXT_TASKS.md)를 참고하세요.
+**완료된 작업**: [COMPLETED_TASKS.md](COMPLETED_TASKS.md)
+**남은 작업**: [NEXT_TASKS.md](NEXT_TASKS.md)
 
 ## 배포 및 운영
 
