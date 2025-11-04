@@ -183,8 +183,8 @@ class SceneServiceTest {
                 .name("Character 2")
                 .project(testProject)
                 .build();
-        when(characterRepository.findByCharacterId("char001")).thenReturn(Optional.of(testCharacter));
-        when(characterRepository.findByCharacterId("char002")).thenReturn(Optional.of(character2));
+        when(characterRepository.findByCharacterIdIn(Arrays.asList("char001", "char002")))
+                .thenReturn(Arrays.asList(testCharacter, character2));
 
         // when
         List<Character> result = sceneService.getParticipants(testScene);
@@ -195,8 +195,7 @@ class SceneServiceTest {
         assertThat(result.get(0).getCharacterId()).isEqualTo("char001");
         assertThat(result.get(1).getCharacterId()).isEqualTo("char002");
 
-        verify(characterRepository).findByCharacterId("char001");
-        verify(characterRepository).findByCharacterId("char002");
+        verify(characterRepository).findByCharacterIdIn(Arrays.asList("char001", "char002"));
     }
 
     @Test

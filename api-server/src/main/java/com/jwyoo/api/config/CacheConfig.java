@@ -3,6 +3,7 @@ package com.jwyoo.api.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,9 +19,13 @@ import java.time.Duration;
 /**
  * Redis 캐싱 설정
  * Task 90: API 응답 캐싱
+ *
+ * Note: This entire configuration is only active when spring.cache.type=redis
+ * For tests with spring.cache.type=none, Spring Boot's default NoOpCacheManager is used
  */
 @Configuration
 @EnableCaching
+@ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
 public class CacheConfig {
 
     /**
