@@ -56,3 +56,6 @@ nul
 
 # Test files
 test_*.py
+
+# Backups
+backups/

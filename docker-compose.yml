@@ -111,6 +111,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-dev1234}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./backups/postgres:/backups  # 백업 디렉토리 마운트
     networks:
       - app-network
     healthcheck:
