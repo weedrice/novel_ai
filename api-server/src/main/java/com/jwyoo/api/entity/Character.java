@@ -67,16 +67,6 @@ public class Character {
     @JsonIgnoreProperties({"character", "scene"})
     private List<Dialogue> dialogues = new ArrayList<>();
 
-    @OneToMany(mappedBy = "fromCharacter", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    @JsonIgnoreProperties({"fromCharacter", "toCharacter"})
-    private List<Relationship> relationshipsFrom = new ArrayList<>();
-
-    @OneToMany(mappedBy = "toCharacter", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    @JsonIgnoreProperties({"fromCharacter", "toCharacter"})
-    private List<Relationship> relationshipsTo = new ArrayList<>();
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
