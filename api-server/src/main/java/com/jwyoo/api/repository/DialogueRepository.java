@@ -35,7 +35,7 @@ public interface DialogueRepository extends JpaRepository<Dialogue, Long> {
      * Task 105: 대사 검색 (텍스트, 캐릭터, 에피소드, 장면 필터)
      * 프로젝트별 필터링 포함
      */
-    @Query("SELECT DISTINCT d FROM Dialogue d " +
+    @Query("SELECT d FROM Dialogue d " +
             "WHERE d.scene.episode.project = :project " +
             "AND (:query IS NULL OR LOWER(d.text) LIKE LOWER(CONCAT('%', :query, '%'))) " +
             "AND (:characterId IS NULL OR d.character.id = :characterId) " +
