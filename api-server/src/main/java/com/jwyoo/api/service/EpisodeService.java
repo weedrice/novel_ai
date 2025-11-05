@@ -1,16 +1,20 @@
 package com.jwyoo.api.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jwyoo.api.entity.Episode;
 import com.jwyoo.api.entity.Project;
 import com.jwyoo.api.repository.EpisodeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 에피소드 비즈니스 로직을 처리하는 서비스
@@ -24,6 +28,10 @@ public class EpisodeService {
 
     private final EpisodeRepository episodeRepository;
     private final ProjectService projectService;
+    private final ObjectMapper objectMapper;
+
+    @Value("${LLM_BASE_URL:http://localhost:8000}")
+    private String llmBaseUrl;
 
     /**
      * 모든 에피소드 조회 (프로젝트별)
@@ -109,5 +117,123 @@ public class EpisodeService {
 
         episodeRepository.delete(episode);
         log.info("Episode deleted successfully: id={}", id);
+    }
+
+    /**
+     * 에피소드 스크립트 업로드 및 분석
+     */
+    @Transactional
+    @CacheEvict(value = "episodes", allEntries = true)
+    public Episode uploadAndAnalyzeScript(Long episodeId, String scriptText, String scriptFormat, String provider) {
+        log.info("Uploading and analyzing script for episode: id={}, format={}, provider={}", episodeId, scriptFormat, provider);
+
+        Episode episode = getEpisodeById(episodeId);
+
+        // 스크립트 설정
+        episode.setScriptText(scriptText);
+        episode.setScriptFormat(scriptFormat);
+        episode.setAnalysisStatus("analyzing");
+        episode.setLlmProvider(provider);
+
+        Episode saved = episodeRepository.save(episode);
+
+        // 비동기 분석 수행 (별도 트랜잭션)
+        try {
+            analyzeEpisodeScript(episodeId, provider);
+        } catch (Exception e) {
+            log.error("Failed to analyze episode script: episodeId={}, error={}", episodeId, e.getMessage());
+            episode.setAnalysisStatus("failed");
+            episodeRepository.save(episode);
+        }
+
+        return saved;
+    }
+
+    /**
+     * 에피소드 스크립트 분석 (LLM 서버 호출)
+     */
+    @Transactional
+    @CacheEvict(value = "episodes", allEntries = true)
+    public Episode analyzeEpisodeScript(Long episodeId, String provider) {
+        log.info("Analyzing episode script: id={}, provider={}", episodeId, provider);
+
+        Episode episode = getEpisodeById(episodeId);
+
+        if (episode.getScriptText() == null || episode.getScriptText().isEmpty()) {
+            log.error("No script text found for episode: {}", episodeId);
+            throw new IllegalArgumentException("Episode has no script text to analyze");
+        }
+
+        episode.setAnalysisStatus("analyzing");
+        episodeRepository.save(episode);
+
+        try {
+            // LLM 서버에 분석 요청
+            Map<String, Object> analysisRequest = Map.of(
+                    "content", episode.getScriptText(),
+                    "formatHint", episode.getScriptFormat() != null ? episode.getScriptFormat() : "",
+                    "provider", provider != null ? provider : "openai"
+            );
+
+            log.info("Calling LLM server for episode script analysis: url={}/gen/analyze-script", llmBaseUrl);
+
+            RestClient restClient = RestClient.builder().build();
+            Map<String, Object> analysisResult = restClient.post()
+                    .uri(llmBaseUrl + "/gen/analyze-script")
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .body(analysisRequest)
+                    .retrieve()
+                    .body(Map.class);
+
+            // 분석 결과를 JSON으로 저장
+            String resultJson = objectMapper.writeValueAsString(analysisResult);
+            episode.setAnalysisResult(resultJson);
+            episode.setLlmProvider(provider);
+            episode.setAnalysisStatus("analyzed");
+
+            log.info("Episode script analysis completed: id={}, characters={}, dialogues={}, scenes={}, relationships={}",
+                    episodeId,
+                    analysisResult.get("characters") != null ? ((List<?>) analysisResult.get("characters")).size() : 0,
+                    analysisResult.get("dialogues") != null ? ((List<?>) analysisResult.get("dialogues")).size() : 0,
+                    analysisResult.get("scenes") != null ? ((List<?>) analysisResult.get("scenes")).size() : 0,
+                    analysisResult.get("relationships") != null ? ((List<?>) analysisResult.get("relationships")).size() : 0
+            );
+
+            return episodeRepository.save(episode);
+
+        } catch (Exception e) {
+            log.error("Failed to analyze episode script: id={}, error={}", episodeId, e.getMessage(), e);
+            episode.setAnalysisStatus("failed");
+            episodeRepository.save(episode);
+            throw new RuntimeException("Episode script analysis failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 에피소드 스크립트 분석 결과 조회 (JSON 파싱)
+     */
+    public Map<String, Object> getScriptAnalysisResult(Long episodeId) {
+        log.debug("Fetching script analysis result for episode: {}", episodeId);
+
+        Episode episode = getEpisodeById(episodeId);
+
+        if (episode.getAnalysisResult() == null || episode.getAnalysisResult().isEmpty()) {
+            log.warn("No analysis result found for episode: {}", episodeId);
+            return Map.of(
+                    "characters", List.of(),
+                    "dialogues", List.of(),
+                    "scenes", List.of(),
+                    "relationships", List.of()
+            );
+        }
+
+        try {
+            Map<String, Object> result = objectMapper.readValue(episode.getAnalysisResult(), Map.class);
+            log.info("Analysis result retrieved: episodeId={}, hasData={}", episodeId, !result.isEmpty());
+            return result;
+        } catch (Exception e) {
+            log.error("Failed to parse analysis result: episodeId={}, error={}", episodeId, e.getMessage());
+            throw new RuntimeException("Failed to parse analysis result: " + e.getMessage(), e);
+        }
     }
 }
