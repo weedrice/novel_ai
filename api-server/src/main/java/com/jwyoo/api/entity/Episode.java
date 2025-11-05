@@ -33,6 +33,39 @@ public class Episode {
     private Integer episodeOrder; // 에피소드 순서
 
     /**
+     * 스크립트 원문 내용 (에피소드의 원본 텍스트)
+     */
+    @Column(columnDefinition = "TEXT")
+    @Lob
+    private String scriptText;
+
+    /**
+     * 스크립트 형식 (novel, screenplay, description, dialogue 등)
+     */
+    @Column(length = 50)
+    private String scriptFormat;
+
+    /**
+     * 분석 상태 (not_analyzed, analyzing, analyzed, failed)
+     */
+    @Column(length = 20)
+    private String analysisStatus;
+
+    /**
+     * 분석 결과 (JSON 형식)
+     * 캐릭터, 대사, 장면 등 LLM이 추출한 정보
+     */
+    @Column(columnDefinition = "TEXT")
+    @Lob
+    private String analysisResult;
+
+    /**
+     * 분석 시 사용한 LLM 프로바이더
+     */
+    @Column(length = 50)
+    private String llmProvider;
+
+    /**
      * 프로젝트 (사용자별 데이터 분리)
      */
     @ManyToOne(fetch = FetchType.LAZY)
