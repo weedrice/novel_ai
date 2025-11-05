@@ -5,6 +5,8 @@ import Card from '@/components/Card';
 import Button from '@/components/ui/Button';
 import ErrorMessage from '@/components/ErrorMessage';
 import apiClient from '@/lib/api';
+import { isDemoMode } from '@/data/demoData';
+import Link from 'next/link';
 
 interface Character {
   id: number;
@@ -29,9 +31,15 @@ export default function DialogueStreamPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [streamingStatus, setStreamingStatus] = useState<'idle' | 'connecting' | 'streaming' | 'done' | 'error'>('idle');
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    fetchCharacters();
+    const demo = isDemoMode();
+    setIsDemo(demo);
+
+    if (!demo) {
+      fetchCharacters();
+    }
   }, []);
 
   const fetchCharacters = async () => {
@@ -153,6 +161,19 @@ export default function DialogueStreamPage() {
 
   return (
     <div className="container mx-auto p-6">
+      {/* 데모 모드 배너 */}
+      {isDemo && (
+        <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+          <p className="text-sm text-blue-700">
+            <strong className="font-semibold">데모 모드</strong> - 이 기능을 사용하려면{" "}
+            <Link href="/login" className="underline hover:text-blue-800">
+              로그인
+            </Link>
+            해주세요.
+          </p>
+        </div>
+      )}
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">실시간 대사 생성 (스트리밍)</h1>
         <p className="text-gray-600">

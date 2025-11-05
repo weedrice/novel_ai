@@ -6,6 +6,8 @@ import Card from "@/components/Card";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ErrorMessage from "@/components/ErrorMessage";
 import apiClient from "@/lib/api";
+import { isDemoMode, demoEpisodes, demoScenes } from "@/data/demoData";
+import Link from "next/link";
 
 type Episode = { id: number; title: string; description: string };
 type Scene = {
@@ -24,12 +26,18 @@ export default function ScenesPage() {
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   // 에피소드 목록 로드
   useEffect(() => {
-    (async () => {
-      await fetchEpisodes();
-    })();
+    const demo = isDemoMode();
+    setIsDemo(demo);
+
+    if (!demo) {
+      (async () => {
+        await fetchEpisodes();
+      })();
+    }
   }, []);
 
   const fetchEpisodes = async () => {
@@ -76,6 +84,19 @@ export default function ScenesPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-6 md:p-10">
       <div className="max-w-6xl mx-auto">
+        {/* 데모 모드 배너 */}
+        {isDemo && (
+          <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+            <p className="text-sm text-blue-700">
+              <strong className="font-semibold">데모 모드</strong> - 이 기능을 사용하려면{" "}
+              <Link href="/login" className="underline hover:text-blue-800">
+                로그인
+              </Link>
+              해주세요.
+            </p>
+          </div>
+        )}
+
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">장면 관리</h1>

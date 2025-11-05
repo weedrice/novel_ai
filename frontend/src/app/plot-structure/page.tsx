@@ -7,6 +7,8 @@ import Card from '@/components/Card'
 import Select from '@/components/ui/Select'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
+import { isDemoMode } from '@/data/demoData'
+import Link from 'next/link'
 import {
   LineChart,
   Line,
@@ -33,9 +35,15 @@ export default function PlotStructurePage() {
   const [plotData, setPlotData] = useState<PlotAnalysis | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isDemo, setIsDemo] = useState(false)
 
   useEffect(() => {
-    loadEpisodes()
+    const demo = isDemoMode()
+    setIsDemo(demo)
+
+    if (!demo) {
+      loadEpisodes()
+    }
   }, [])
 
   const loadEpisodes = async () => {
@@ -87,6 +95,19 @@ export default function PlotStructurePage() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 md:p-10 transition-colors duration-200">
       <div className="max-w-7xl mx-auto">
+        {/* 데모 모드 배너 */}
+        {isDemo && (
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400 rounded-r-lg">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              <strong className="font-semibold">데모 모드</strong> - 이 기능을 사용하려면{" "}
+              <Link href="/login" className="underline hover:text-blue-800 dark:hover:text-blue-200">
+                로그인
+              </Link>
+              해주세요.
+            </p>
+          </div>
+        )}
+
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             📊 플롯 구조 시각화
