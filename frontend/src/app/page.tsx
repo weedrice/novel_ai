@@ -107,7 +107,7 @@ export default function Home() {
           <p className="text-gray-600 dark:text-gray-400 text-lg">Character Dialogue Tone Assistant System</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <a href="/graph" className="block p-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-md transition-colors duration-200">
             <div className="text-xl font-semibold mb-2">캐릭터 관계 그래프</div>
             <p className="text-purple-100 text-sm">캐릭터 간 관계를 시각적으로 확인합니다.</p>
@@ -127,6 +127,14 @@ export default function Home() {
           <a href="/dialogue-stream" className="block p-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md transition-colors duration-200">
             <div className="text-xl font-semibold mb-2">⚡ 실시간 대사 생성</div>
             <p className="text-indigo-100 text-sm">스트리밍으로 LLM 대사 생성을 실시간 확인합니다.</p>
+          </a>
+          <a href="/search" className="block p-6 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg shadow-md transition-colors duration-200">
+            <div className="text-xl font-semibold mb-2">🔍 대사 검색</div>
+            <p className="text-cyan-100 text-sm">텍스트 검색 및 필터로 대사를 빠르게 찾습니다.</p>
+          </a>
+          <a href="/plot-structure" className="block p-6 bg-orange-600 hover:bg-orange-700 text-white rounded-lg shadow-md transition-colors duration-200">
+            <div className="text-xl font-semibold mb-2">📊 플롯 구조 시각화</div>
+            <p className="text-orange-100 text-sm">스토리 아크, 갈등 강도, 캐릭터 등장 빈도를 분석합니다.</p>
           </a>
         </div>
 

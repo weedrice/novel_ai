@@ -8,7 +8,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   label?: string;
   error?: string;
   helperText?: string;
-  options: Array<{ value: string; label: string; disabled?: boolean }>;
+  options?: Array<{ value: string; label: string; disabled?: boolean }>;
   placeholder?: string;
   fullWidth?: boolean;
 }
@@ -86,15 +86,19 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                 {placeholder}
               </option>
             )}
-            {options.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                disabled={option.disabled}
-              >
-                {option.label}
-              </option>
-            ))}
+            {options ? (
+              options.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                  disabled={option.disabled}
+                >
+                  {option.label}
+                </option>
+              ))
+            ) : (
+              props.children
+            )}
           </select>
 
           {/* 커스텀 화살표 아이콘 */}
