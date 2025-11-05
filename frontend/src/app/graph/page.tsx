@@ -54,6 +54,12 @@ type GraphEdge = {
   closeness?: number
 }
 
+interface Episode {
+  id: number
+  title: string
+  order: number
+}
+
 function GraphPageContent() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Person>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -63,12 +69,35 @@ function GraphPageContent() {
   const [selectedNode, setSelectedNode] = useState<Node<Person> | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null)
   const [isDemo, setIsDemo] = useState(false)
+  const [episodes, setEpisodes] = useState<Episode[]>([])
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null)
   const reactFlowInstance = useReactFlow()
 
   // 컴포넌트 마운트 시 데모 모드 확인
   useEffect(() => {
     setIsDemo(isDemoMode())
   }, [])
+
+  // 에피소드 목록 로드
+  useEffect(() => {
+    if (!isDemo) {
+      loadEpisodes()
+    }
+  }, [isDemo])
+
+  const loadEpisodes = async () => {
+    try {
+      const response = await apiClient.get('/episodes')
+      setEpisodes(response.data)
+
+      // 첫 번째 에피소드 자동 선택
+      if (response.data.length > 0 && !selectedEpisodeId) {
+        setSelectedEpisodeId(response.data[0].id)
+      }
+    } catch (err) {
+      console.error('Failed to load episodes:', err)
+    }
+  }
 
   const fetchGraph = useCallback(async () => {
     setLoading(true)
@@ -97,7 +126,14 @@ function GraphPageContent() {
         }))
       } else {
         // 일반 모드: API에서 데이터 가져오기
-        const res = await apiClient.get('/relationships/graph')
+        if (!selectedEpisodeId) {
+          // 에피소드가 선택되지 않은 경우
+          setError('에피소드를 선택해주세요')
+          return
+        }
+
+        const endpoint = `/episode-relationships/episode/${selectedEpisodeId}/graph`
+        const res = await apiClient.get(endpoint)
         const data = res.data
 
         rawNodes = Array.isArray(data?.nodes) ? data.nodes : []
@@ -175,7 +211,7 @@ function GraphPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [layoutDirection, setNodes, setEdges, isDemo])
+  }, [layoutDirection, setNodes, setEdges, isDemo, selectedEpisodeId])
 
   useEffect(() => {
     if (!isDemo) {
@@ -266,36 +302,59 @@ function GraphPageContent() {
         )}
 
         {/* 상단 헤더 */}
-        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
-          <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/')}>
-            ← 홈으로
-          </Button>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">인물 관계도</h1>
+        <div className="mb-4 space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
+            <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/')}>
+              ← 홈으로
+            </Button>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">인물 관계도</h1>
 
-          <div className="sm:ml-auto flex items-center gap-2 flex-wrap w-full sm:w-auto">
-            <button
-              className="flex-1 sm:flex-none px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-xs sm:text-sm font-medium"
-              onClick={toggleLayout}
-              title="레이아웃 전환"
-            >
-              {layoutDirection === 'TB' ? '수평 ↔' : '수직 ↕'}
-            </button>
+            <div className="sm:ml-auto flex items-center gap-2 flex-wrap w-full sm:w-auto">
+              <button
+                className="flex-1 sm:flex-none px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-xs sm:text-sm font-medium"
+                onClick={toggleLayout}
+                title="레이아웃 전환"
+              >
+                {layoutDirection === 'TB' ? '수평 ↔' : '수직 ↕'}
+              </button>
 
-            <button
-              className="flex-1 sm:flex-none px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-xs sm:text-sm font-medium"
-              onClick={handleFitView}
-              title="전체 보기"
-            >
-              전체 보기
-            </button>
+              <button
+                className="flex-1 sm:flex-none px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm transition-colors text-xs sm:text-sm font-medium"
+                onClick={handleFitView}
+                title="전체 보기"
+              >
+                전체 보기
+              </button>
 
-            <button
-              className="flex-1 sm:flex-none px-3 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-colors text-xs sm:text-sm font-medium"
-              onClick={fetchGraph}
-            >
-              새로고침
-            </button>
+              <button
+                className="flex-1 sm:flex-none px-3 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-colors text-xs sm:text-sm font-medium"
+                onClick={fetchGraph}
+              >
+                새로고침
+              </button>
+            </div>
           </div>
+
+          {/* 에피소드 선택 */}
+          {!isDemo && episodes.length > 0 && (
+            <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                에피소드:
+              </label>
+              <select
+                value={selectedEpisodeId || ''}
+                onChange={(e) => setSelectedEpisodeId(e.target.value ? Number(e.target.value) : null)}
+                className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                {episodes.length === 0 && <option value="">에피소드를 불러오는 중...</option>}
+                {episodes.map((ep) => (
+                  <option key={ep.id} value={ep.id}>
+                    {ep.order}화: {ep.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {error && (

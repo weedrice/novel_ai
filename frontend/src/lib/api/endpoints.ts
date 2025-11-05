@@ -197,40 +197,46 @@ export const charactersApi = {
 };
 
 /**
- * Relationship API
+ * Episode Relationship API
+ * 에피소드별 캐릭터 관계 관리
  */
-export const relationshipsApi = {
+export const episodeRelationshipsApi = {
   /**
-   * 모든 관계 조회
+   * 특정 에피소드의 관계 그래프 데이터 조회
    */
-  getAll: () => apiClient.get<Relationship[]>('/relationships'),
+  getEpisodeGraph: (episodeId: number) =>
+    apiClient.get<GraphData>(`/episode-relationships/episode/${episodeId}/graph`),
 
   /**
-   * 특정 관계 조회
+   * 특정 에피소드의 모든 관계 조회
    */
-  getById: (id: number) => apiClient.get<Relationship>(`/relationships/${id}`),
+  getByEpisode: (episodeId: number) =>
+    apiClient.get<Relationship[]>(`/episode-relationships/episode/${episodeId}`),
 
   /**
-   * 관계 그래프 데이터 조회
+   * 두 캐릭터 간의 관계 변화 히스토리 조회
    */
-  getGraph: () => apiClient.get<GraphData>('/relationships/graph'),
+  getHistory: (char1Id: number, char2Id: number) =>
+    apiClient.get<Relationship[]>(
+      `/episode-relationships/history?char1Id=${char1Id}&char2Id=${char2Id}`
+    ),
 
   /**
-   * 관계 생성
+   * 에피소드 관계 생성
    */
   create: (data: Omit<Relationship, 'id'>) =>
-    apiClient.post<Relationship>('/relationships', data),
+    apiClient.post<Relationship>('/episode-relationships', data),
 
   /**
-   * 관계 수정
+   * 에피소드 관계 수정
    */
   update: (id: number, data: Partial<Relationship>) =>
-    apiClient.put<Relationship>(`/relationships/${id}`, data),
+    apiClient.put<Relationship>(`/episode-relationships/${id}`, data),
 
   /**
-   * 관계 삭제
+   * 에피소드 관계 삭제
    */
-  delete: (id: number) => apiClient.delete<void>(`/relationships/${id}`),
+  delete: (id: number) => apiClient.delete<void>(`/episode-relationships/${id}`),
 };
 
 /**

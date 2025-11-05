@@ -85,9 +85,9 @@ export default function Home() {
             <div className="text-xl font-semibold mb-2">시나리오 편집</div>
             <p className="text-emerald-100 text-sm">장면별 시나리오를 생성·편집합니다.</p>
           </a>
-          <a href="/script-analyzer" className="block p-6 bg-pink-600 hover:bg-pink-700 text-white rounded-lg shadow-md transition-colors duration-200">
-            <div className="text-xl font-semibold mb-2">📝 스크립트 분석</div>
-            <p className="text-pink-100 text-sm">소설·시나리오에서 캐릭터와 관계를 추출합니다.</p>
+          <a href="/episodes" className="block p-6 bg-pink-600 hover:bg-pink-700 text-white rounded-lg shadow-md transition-colors duration-200">
+            <div className="text-xl font-semibold mb-2">📚 에피소드 관리</div>
+            <p className="text-pink-100 text-sm">에피소드별 스크립트 업로드 및 LLM 분석을 수행합니다.</p>
           </a>
           <a href="/dialogue-stream" className="block p-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md transition-colors duration-200">
             <div className="text-xl font-semibold mb-2">⚡ 실시간 대사 생성</div>
