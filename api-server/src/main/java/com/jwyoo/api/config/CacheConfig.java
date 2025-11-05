@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.datatype.hibernate6.Hibernate6Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.annotation.EnableCaching;
@@ -42,6 +43,11 @@ public class CacheConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // Hibernate Lazy Loading 지원 (hibernateLazyInitializer 직렬화 문제 해결)
+        Hibernate6Module hibernate6Module = new Hibernate6Module();
+        hibernate6Module.configure(Hibernate6Module.Feature.FORCE_LAZY_LOADING, false);
+        objectMapper.registerModule(hibernate6Module);
 
         // 타입 정보를 포함하여 직렬화 (LinkedHashMap 문제 해결)
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
