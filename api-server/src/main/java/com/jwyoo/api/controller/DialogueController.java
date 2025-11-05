@@ -3,12 +3,14 @@ package com.jwyoo.api.controller;
 import com.jwyoo.api.dto.SuggestRequest;
 import com.jwyoo.api.entity.Character;
 import com.jwyoo.api.entity.Dialogue;
+import com.jwyoo.api.entity.Project;
 import com.jwyoo.api.entity.Scene;
 import com.jwyoo.api.exception.ResourceNotFoundException;
 import com.jwyoo.api.repository.CharacterRepository;
 import com.jwyoo.api.repository.DialogueRepository;
 import com.jwyoo.api.repository.SceneRepository;
 import com.jwyoo.api.service.LlmClient;
+import com.jwyoo.api.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ public class DialogueController {
     private final DialogueRepository dialogueRepository;
     private final SceneRepository sceneRepository;
     private final CharacterRepository characterRepository;
+    private final ProjectService projectService;
 
     /**
      * LLM을 통한 대사 제안
@@ -185,5 +188,32 @@ public class DialogueController {
         List<Dialogue> dialogues = dialogueRepository.findByCharacterIdOrderByCreatedAtDesc(characterId);
 
         return ResponseEntity.ok(dialogues);
+    }
+
+    /**
+     * Task 105: 대사 검색 API
+     * 텍스트 검색, 캐릭터/에피소드/장면 필터링 지원
+     */
+    @GetMapping("/search")
+    public ResponseEntity<List<Dialogue>> searchDialogues(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) Long characterId,
+            @RequestParam(required = false) Long episodeId,
+            @RequestParam(required = false) Long sceneId
+    ) {
+        log.info("GET /dialogue/search - query: {}, characterId: {}, episodeId: {}, sceneId: {}",
+                query, characterId, episodeId, sceneId);
+
+        Project currentProject = projectService.getCurrentProject();
+        List<Dialogue> results = dialogueRepository.searchDialogues(
+                currentProject,
+                query,
+                characterId,
+                episodeId,
+                sceneId
+        );
+
+        log.info("Found {} dialogues", results.size());
+        return ResponseEntity.ok(results);
     }
 }
