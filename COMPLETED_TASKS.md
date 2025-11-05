@@ -242,6 +242,67 @@
 - `api-server/src/test/java/com/jwyoo/api/controller/SceneControllerTest.java`
 - 8개 Controller 테스트 파일에 `excludeAutoConfiguration` 추가
 
+### 추가 완료 작업 (2025-11-05)
+
+#### Task 99: 플롯 구조 시각화 (Phase 10.3) ✅
+**완료 날짜**: 2025-11-05
+- **백엔드**: 플롯 분석 API 구현
+  - PlotAnalysisDto, PlotAnalysisService 신규 생성
+  - GET /episodes/{id}/plot-analysis 엔드포인트 추가
+  - 갈등 강도 계산 로직 (대사 수, 참여 캐릭터, 분위기 기반)
+  - 캐릭터별 등장 빈도 통계
+- **프론트엔드**: /plot-structure 페이지 구현
+  - Recharts 라이브러리 설치 및 통합
+  - 스토리 아크 곡선 (AreaChart)
+  - 장면별 대사 수 (BarChart)
+  - 캐릭터 등장 빈도 (가로 BarChart)
+  - 장면 상세 정보 테이블
+  - 기본 통계 카드 (총 장면 수, 대사 수, 평균 갈등 강도)
+
+**수정된 파일**:
+- `api-server/src/main/java/com/jwyoo/api/dto/PlotAnalysisDto.java` (신규)
+- `api-server/src/main/java/com/jwyoo/api/service/PlotAnalysisService.java` (신규)
+- `api-server/src/main/java/com/jwyoo/api/controller/EpisodeController.java`
+- `frontend/src/lib/plot.ts` (신규)
+- `frontend/src/app/plot-structure/page.tsx` (신규)
+- `frontend/package.json` (recharts 추가)
+
+#### Task 105: 프론트엔드 검색 UI (Phase 7.3) ✅
+**완료 날짜**: 2025-11-05
+- **백엔드**: 대사 검색 API 구현
+  - DialogueRepository에 searchDialogues() 메서드 추가
+  - GET /dialogue/search 엔드포인트 추가
+  - 텍스트 검색 + 필터링 (캐릭터, 에피소드, 장면)
+  - 프로젝트별 필터링 지원
+- **프론트엔드**: /search 페이지 구현
+  - 검색 바 (텍스트 검색, Enter 키 지원)
+  - 필터 옵션 (캐릭터, 에피소드, 장면 드롭다운)
+  - 검색 결과 표시 (캐릭터, 대사, 위치 정보)
+  - 에피소드 선택 시 장면 목록 자동 로드
+
+**수정된 파일**:
+- `api-server/src/main/java/com/jwyoo/api/repository/DialogueRepository.java`
+- `api-server/src/main/java/com/jwyoo/api/controller/DialogueController.java`
+- `frontend/src/lib/search.ts` (신규)
+- `frontend/src/app/search/page.tsx` (신규)
+
+#### 홈페이지 네비게이션 업데이트 ✅
+**완료 날짜**: 2025-11-05
+- 그리드 레이아웃 4컬럼 → 3컬럼으로 변경
+- 🔍 대사 검색 카드 추가 (cyan)
+- 📊 플롯 구조 시각화 카드 추가 (orange)
+
+**수정된 파일**:
+- `frontend/src/app/page.tsx`
+
+#### Select 컴포넌트 개선 ✅
+**완료 날짜**: 2025-11-05
+- options를 선택적(optional)으로 변경
+- children 지원 추가 (직접 option 요소 전달 가능)
+
+**수정된 파일**:
+- `frontend/src/components/ui/Select.tsx`
+
 ---
 
 ## 📊 Phase별 소요 시간 요약
