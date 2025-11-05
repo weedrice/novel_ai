@@ -178,8 +178,10 @@ function GraphPageContent() {
   }, [layoutDirection, setNodes, setEdges, isDemo])
 
   useEffect(() => {
-    fetchGraph()
-  }, [layoutDirection, fetchGraph])
+    if (!isDemo) {
+      fetchGraph()
+    }
+  }, [layoutDirection, fetchGraph, isDemo])
 
   // nodes 변경 시 fitView
   useEffect(() => {
