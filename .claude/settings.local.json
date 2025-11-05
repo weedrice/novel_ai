@@ -53,7 +53,10 @@
       "Bash(else echo \"llm-server/.env already exists\")",
       "Bash(./gradlew:*)",
       "Bash(java -version:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(set JAVA_HOME:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTc2MjMxOTk5NiwiZXhwIjoxNzYyMzIwODk2fQ.1--Orb1vRHW12hmmRY9QQQ2G_MDCjgC-kBz7Lkfr8K56mNt-qiOevsm8dcfFgCC32PRcZcgaxspEZFV5FZPZ8g\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTc2MjMyNTk2MCwiZXhwIjoxNzYyMzI2ODYwfQ.a_q6oJ02vwnECViAsU7mrcUjRgJ4c10_XLQeNKbA6io55I-lmsRHGbxqqbsVgpY7qQnm5WziwLhcRQird27SXQ\")"
     ],
     "deny": [],
     "ask": []
