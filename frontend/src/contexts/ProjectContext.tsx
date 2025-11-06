@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Project, getMyProjects, getCurrentProject as getStoredProject, setCurrentProject as setStoredProject } from '@/lib/project';
+import { Project } from '@/types/project';
+import { getMyProjects, getCurrentProject as getStoredProject, setCurrentProject as setStoredProject } from '@/lib/project';
 import { isAuthenticated } from '@/lib/auth';
 
 interface ProjectContextType {

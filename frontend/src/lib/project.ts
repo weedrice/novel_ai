@@ -1,12 +1,5 @@
 import apiClient from './api';
-
-export interface Project {
-  id: number;
-  name: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Project } from '@/types/project';
 
 export interface ProjectRequest {
   name: string;
