@@ -59,7 +59,8 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTc2MjMyNTk2MCwiZXhwIjoxNzYyMzI2ODYwfQ.a_q6oJ02vwnECViAsU7mrcUjRgJ4c10_XLQeNKbA6io55I-lmsRHGbxqqbsVgpY7qQnm5WziwLhcRQird27SXQ\")",
       "Bash(chmod:*)",
       "Bash(git restore:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

@@ -2,7 +2,7 @@
  * Neo4j GraphDB API 클라이언트
  */
 
-import api from './api';
+import api from '@/lib/api';
 
 export interface CharacterNode {
   id: number;
