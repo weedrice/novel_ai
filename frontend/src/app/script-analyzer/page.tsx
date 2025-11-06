@@ -89,19 +89,11 @@ export default function ScriptAnalyzer() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-4 sm:p-6 md:p-8 transition-colors duration-200">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-          <div className="flex-1">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-2">📝 스크립트 분석기</h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-              소설, 시나리오, 묘사 등 다양한 형식의 스크립트를 분석하여 캐릭터와 관계를 추출합니다
-            </p>
-          </div>
-          <Link
-            href="/"
-            className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap"
-          >
-            ← 홈으로
-          </Link>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-2">📝 스크립트 분석기</h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
+            소설, 시나리오, 묘사 등 다양한 형식의 스크립트를 분석하여 캐릭터와 관계를 추출합니다
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">

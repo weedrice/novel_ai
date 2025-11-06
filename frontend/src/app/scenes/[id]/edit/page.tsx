@@ -333,13 +333,7 @@ export default function SceneEditPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => window.location.href = '/'}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-sm"
-              >
-                홈으로
-              </button>
+            <div>
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
                 장면 {scene.sceneNumber} 편집
               </h1>

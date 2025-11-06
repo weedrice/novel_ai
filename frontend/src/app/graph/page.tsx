@@ -304,9 +304,6 @@ function GraphPageContent() {
         {/* 상단 헤더 */}
         <div className="mb-4 space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
-            <Button variant="secondary" size="sm" onClick={() => (window.location.href = '/')}>
-              ← 홈으로
-            </Button>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">인물 관계도</h1>
 
             <div className="sm:ml-auto flex items-center gap-2 flex-wrap w-full sm:w-auto">

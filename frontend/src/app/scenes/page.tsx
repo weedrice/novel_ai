@@ -98,12 +98,7 @@ export default function ScenesPage() {
         )}
 
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">장면 관리</h1>
-            <a href="/" className="text-blue-600 hover:text-blue-800 font-medium">
-              홈으로
-            </a>
-          </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">장면 관리</h1>
           <p className="text-gray-600">에피소드와 장면을 관리하고 시나리오를 편집하세요.</p>
         </div>
 

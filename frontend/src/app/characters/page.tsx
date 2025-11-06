@@ -133,13 +133,7 @@ export default function CharactersPage() {
           </div>
         )}
 
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={() => window.location.href = '/'}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-sm"
-          >
-            홈으로
-          </button>
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">말투 프로필 관리</h1>
         </div>
 
