@@ -17,6 +17,12 @@ Novel AI는 소설과 웹툰 등 스토리텔링 콘텐츠의 기획과 제작�
 - **캐릭터 관계**: 등장인물 간의 관계(친구, 적대, 가족 등)를 정의하고 관계도를 시각화합니다.
 - **프로젝트별 관리**: 각 프로젝트마다 독립적인 캐릭터 및 관계 데이터를 유지합니다.
 
+### Neo4j GraphDB 기반 관계 분석
+- **인터랙티브 그래프 시각화**: React Flow로 캐릭터 관계 네트워크를 시각화합니다.
+- **Centrality 분석**: Degree, Betweenness, Closeness, Weighted Degree 계산으로 중심 인물을 파악합니다.
+- **시간축 관계 추적**: 에피소드별 관계 변화를 타임라인으로 추적하고 네트워크 밀도를 분석합니다.
+- **복잡한 관계 쿼리**: N단계 친구 찾기, 최단 경로, 관계 진화 등 그래프 알고리즘 기반 분석을 제공합니다.
+
 ### 시나리오 작성 및 편집
 - **에피소드/장면 구조화**: 에피소드별로 장면(Scene)을 추가하고 계층적으로 관리합니다.
 - **기존 대사 입력**: 장면별로 기존 대사를 캐릭터, 대사 내용, 말투로 입력/편집/삭제합니다.
@@ -52,11 +58,11 @@ Novel AI는 소설과 웹툰 등 스토리텔링 콘텐츠의 기획과 제작�
 각 서비스는 독립적으로 배포할 수 있으며, 내부 통신은 REST API 혹은 gRPC(선택 사항)로 확장 가능합니다.
 
 ## 기술 스택
-- **프론트엔드**: Next.js 15, React 18, TypeScript, Tailwind CSS v4
-- **백엔드**: Spring Boot 3.4 (Java 21), Spring Data JPA/Hibernate, Gradle 8, Spring Security 6
+- **프론트엔드**: Next.js 15, React 18, TypeScript, Tailwind CSS v4, React Flow, Chart.js
+- **백엔드**: Spring Boot 3.4 (Java 21), Spring Data JPA/Hibernate, Spring Data Neo4j, Gradle 8, Spring Security 6
 - **LLM 서비스**: FastAPI, Python 3.11, 멀티 프로바이더 (OpenAI GPT, Anthropic Claude, Google Gemini)
 - **인프라**: Docker, Docker Compose, (예정) Kubernetes, GitHub Actions 기반 CI/CD
-- **데이터베이스**: H2 (개발 환경), PostgreSQL (프로덕션)
+- **데이터베이스**: PostgreSQL (RDB), Neo4j (GraphDB), H2 (개발 환경)
 
 ## 사전 요구 사항
 - Docker 및 Docker Compose (권장)
@@ -208,8 +214,9 @@ pytest
 
 ## 현재 구현 상태
 
-### ✅ 완료된 기능 (2025-10-31 기준)
+### ✅ 완료된 기능 (2025-11-06 기준)
 - **Phase 0-6 완료**: 프로젝트 초기 설정, 도메인 모델 구축, 관계 그래프 시각화, LLM 연동, 시나리오 생성, 스크립트 분석, 사용자 인증 및 프로젝트 관리
+- **Phase 9 완료**: Neo4j GraphDB 통합 (Centrality 분석, 시간축 추적, 그래프 시각화)
 - **Phase 10 일부 완료**: UI/UX 개선, 인증 고도화, 데모 모드, 테스트 인프라
 - **백엔드 (api-server)**:
   - **인증 시스템**:
@@ -221,8 +228,13 @@ pytest
   - 시나리오 버전 관리 시스템
   - 스크립트 업로드 및 분석 API
   - 포괄적인 로깅 인프라 (모든 서비스 레이어)
-  - H2 인메모리 데이터베이스 (개발 환경)
+  - PostgreSQL 프로덕션 DB 설정
   - 프로젝트별 데이터 필터링 (모든 Repository 및 Service)
+  - **Neo4j GraphDB 통합**:
+    - CharacterNode 엔티티 및 INTERACTS_WITH 관계
+    - 10개 Cypher 쿼리 메서드 (Centrality 분석, 시간축 추적)
+    - GraphSyncService (RDB ↔ Neo4j 자동 동기화)
+    - 10개 Graph API 엔드포인트 (/graph/centrality/*, /graph/timeline/*)
   - **테스트 인프라**:
     - JUnit 기반 Service 계층 단위 테스트 (118개)
     - 백엔드 통합 테스트 (20개 - Auth, Project, Database)
@@ -238,10 +250,13 @@ pytest
   - **프로젝트 관리 UI**: 프로젝트 선택 드롭다운, 프로젝트 생성 모달, 네비게이션 바
   - **프로젝트 컨텍스트**: 전역 프로젝트 상태 관리, 자동 프로젝트 선택
   - 캐릭터 관리 UI (말투 프로필 편집)
-  - 관계 그래프 시각화 (React Flow)
   - 시나리오 편집기 (장면별 대화 생성)
   - 스크립트 분석 UI (소설/시나리오 업로드 및 자동 분석)
   - LLM 프로바이더 선택 (GPT, Claude, Gemini)
+  - **Neo4j 그래프 시각화**:
+    - `/graph-view`: React Flow 기반 인터랙티브 관계 그래프
+    - `/graph-timeline`: Chart.js 기반 시계열 타임라인
+    - 중심 인물 Top 5, 네트워크 밀도 차트, 관계 진화 추적
   - **UI/UX 개선**:
     - 다크 모드 완성 (Tailwind CSS v4 기반, 테마 전환 토글)
     - 키보드 단축키 (Ctrl+K 검색, ESC 닫기 등)
@@ -259,7 +274,17 @@ pytest
   - LLM 기반 스크립트 분석 (캐릭터, 장면, 대사, 관계 추출)
   - Fallback 더미 응답 시스템
 
-### 🔧 최근 수정 사항 (2025-11-04)
+### 🔧 최근 수정 사항 (2025-11-06)
+- **Phase 9 완료: Neo4j GraphDB 통합**:
+  - **백엔드**: CharacterNode 엔티티 및 CharacterNodeRepository 구현
+  - **Centrality 분석**: 5개 API 엔드포인트 (degree, betweenness, closeness, weighted, all)
+  - **시간축 추적**: 5개 API 엔드포인트 (range, character evolution, timeline, density, new relationships)
+  - **복잡한 Cypher 쿼리**: 10개 Neo4j 쿼리 메서드 구현
+  - **그래프 시각화**: `/graph-view` 페이지 (React Flow + Dagre)
+  - **타임라인 분석**: `/graph-timeline` 페이지 (Chart.js 시계열 차트)
+  - **자동 동기화**: GraphSyncService 및 EventListener로 RDB ↔ Neo4j 동기화
+
+- **이전 수정 사항 (2025-11-04)**:
 - **Redis 테스트 환경 개선**:
   - application-test.properties에 spring.cache.type=none 추가
   - CacheConfig.java에 @ConditionalOnProperty 추가 (Redis 미사용 시 캐시 설정 비활성화)
@@ -390,10 +415,9 @@ pytest
    - ✅ 테스트 인프라 구축 (Task 94-96 완료)
    - ⏳ TTS 음성 합성 (Task 97)
    - ⏳ AI 이미지 생성 (Task 98)
-   - ⏳ 플롯 구조 시각화 (Task 99)
    - ⏳ 엑셀 Import/Export (Task 100)
 2. **Phase 7**: Vector DB 및 의미 검색 (선택적)
-3. **Phase 9**: Neo4j GraphDB 전환 (선택적)
+3. **Phase 11**: Multi-Database Architecture (선택적)
 
 **완료된 작업**: [COMPLETED_TASKS.md](COMPLETED_TASKS.md)
 **남은 작업**: [NEXT_TASKS.md](NEXT_TASKS.md)

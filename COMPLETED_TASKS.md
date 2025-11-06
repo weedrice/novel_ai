@@ -16,6 +16,7 @@
 - **Phase 5**: ✅ 스크립트 검수 및 분석 도구 (완료)
 - **Phase 6**: ✅ 사용자 인증 및 권한 관리 (완료)
 - **Phase 8**: ✅ Docker 및 배포 자동화 (완료)
+- **Phase 9**: ✅ Neo4j GraphDB 통합 (완료)
 - **Phase 10**: ⏳ 고급 기능 및 최적화 (일부 완료)
 
 ### 테스트 통계 (2025-11-04 기준)
@@ -149,6 +150,200 @@
 - Redis 캐싱 인프라
 - GitHub Actions CI/CD 파이프라인
 - 멀티 플랫폼 이미지 빌드 (amd64, arm64)
+
+---
+
+## Phase 9: Neo4j GraphDB 통합 ✅
+
+**완료 날짜**: 2025-11-06
+
+### 주요 성과
+- Spring Data Neo4j 통합
+- Centrality 분석 API (Degree, Betweenness, Closeness, Weighted Degree)
+- 시간축 관계 추적 API
+- React Flow 기반 그래프 시각화
+- Chart.js 기반 타임라인 분석
+
+### 완료된 Task 목록
+
+#### Task 106: Spring Data Neo4j 설정 ✅
+**완료 날짜**: 2025-11-06
+- [x] spring-boot-starter-data-neo4j 의존성 추가 (build.gradle.kts)
+- [x] Neo4j 연결 설정 (application.properties)
+- [x] CharacterNode 엔티티 정의
+  - `@Node` 어노테이션 기반 노드 엔티티
+  - `id`, `rdbId`, `projectId`, `characterId`, `name`, `description`, `personality`, `speakingStyle`
+  - `@Relationship` INTERACTS_WITH 관계 (episodeId, relationType, closeness)
+- [x] CharacterNodeRepository 구현
+  - Neo4j Repository 인터페이스 확장
+  - 기본 CRUD 메서드 (findByRdbId, findByProjectId, findByCharacterId)
+- [x] GraphSyncService 구현
+  - RDB → Neo4j 동기화 로직
+  - syncCharacter(), syncEpisodeRelationship() 메서드
+  - deleteCharacterNode(), deleteEpisodeRelationshipNode() 메서드
+  - migrateAllData(), migrateProjectData() 대량 마이그레이션
+- [x] GraphSyncEventListener 구현
+  - @PostPersist, @PostUpdate, @PostRemove JPA 이벤트 리스너
+  - Character, EpisodeRelationship 자동 동기화
+- [x] GraphController 기본 API 구현
+  - GET /graph/characters - 모든 캐릭터 조회
+  - GET /graph/characters/{id} - 캐릭터 조회
+  - POST /graph/sync/all - 전체 데이터 동기화
+  - POST /graph/sync/project/{id} - 프로젝트 데이터 동기화
+
+**구현된 파일**:
+- `api-server/build.gradle.kts`
+- `api-server/src/main/resources/application.properties`
+- `api-server/src/main/java/com/jwyoo/api/graph/node/CharacterNode.java`
+- `api-server/src/main/java/com/jwyoo/api/graph/node/CharacterRelationship.java`
+- `api-server/src/main/java/com/jwyoo/api/graph/repository/CharacterNodeRepository.java`
+- `api-server/src/main/java/com/jwyoo/api/graph/service/GraphSyncService.java`
+- `api-server/src/main/java/com/jwyoo/api/graph/event/GraphSyncEventListener.java`
+- `api-server/src/main/java/com/jwyoo/api/graph/controller/GraphController.java`
+
+**실제 소요 시간**: 약 4시간
+
+---
+
+#### Task 108: 복잡한 관계 쿼리 구현 ✅
+**완료 날짜**: 2025-11-06
+
+**Neo4j Cypher 쿼리 메서드** (10개):
+1. `findNDegreeFriends()` - N단계 친구 찾기
+2. `findShortestPath()` - 두 캐릭터 간 최단 경로
+3. `findRelationshipsByEpisodeId()` - 에피소드별 관계 조회
+4. `findAllRelationshipsByProjectId()` - 프로젝트 모든 관계
+5. `findMostConnectedCharacters()` - 중심 인물 찾기
+6. `findCharactersByRelationType()` - 특정 관계 유형 조회
+7. `calculateDegreeCentrality()` - Degree Centrality 계산
+8. `calculateBetweennessCentrality()` - Betweenness Centrality 계산
+9. `calculateClosenessCentrality()` - Closeness Centrality 계산
+10. `calculateWeightedDegree()` - Weighted Degree 계산
+
+**추가 Cypher 쿼리** (5개 - 시간축 추적):
+11. `findRelationshipsByEpisodeRange()` - 에피소드 범위별 관계
+12. `findCharacterRelationshipEvolution()` - 캐릭터 관계 진화
+13. `findRelationshipTimeline()` - 두 캐릭터 관계 타임라인
+14. `calculateNetworkDensityByEpisode()` - 네트워크 밀도 계산
+15. `findNewRelationshipsByEpisode()` - 새 관계 추가 현황
+
+**GraphQueryService 메서드**:
+- `findNDegreeFriends(characterId, depth)` - N단계 친구
+- `findShortestPath(from, to)` - 최단 경로
+- `findRelationshipsByEpisode(episodeId)` - 에피소드별 관계
+- `findAllRelationships()` - 모든 관계
+- `findMostConnectedCharacters(limit)` - 중심 인물
+- `findCharactersByRelationType(characterId, type)` - 관계 유형별
+- `calculateDegreeCentrality(limit)` - Degree Centrality
+- `calculateBetweennessCentrality(limit)` - Betweenness Centrality
+- `calculateClosenessCentrality(limit)` - Closeness Centrality
+- `calculateWeightedDegree(limit)` - Weighted Degree
+- `calculateAllCentralities(limit)` - 모든 Centrality 지표
+- `findRelationshipsByEpisodeRange(start, end)` - 에피소드 범위
+- `findCharacterRelationshipEvolution(characterId)` - 관계 진화
+- `findRelationshipTimeline(char1, char2)` - 관계 타임라인
+- `calculateNetworkDensityByEpisode(episodeId)` - 네트워크 밀도
+- `findNewRelationshipsByEpisode()` - 새 관계 추가 현황
+
+**REST API 엔드포인트** (15개):
+- GET /graph/characters/{id}/friends?depth=2
+- GET /graph/path?from=alice&to=bob
+- GET /graph/relationships
+- GET /graph/relationships/episode/{id}
+- GET /graph/central-characters?limit=10
+- GET /graph/characters/{id}/relations?type=friend
+- GET /graph/centrality/degree?limit=10
+- GET /graph/centrality/betweenness?limit=10
+- GET /graph/centrality/closeness?limit=10
+- GET /graph/centrality/weighted?limit=10
+- GET /graph/centrality/all?limit=10
+- GET /graph/timeline/range?start=1&end=10
+- GET /graph/timeline/character/{id}
+- GET /graph/timeline/relationship?char1=alice&char2=bob
+- GET /graph/timeline/density/{episodeId}
+- GET /graph/timeline/new-relationships
+
+**구현된 파일**:
+- `api-server/src/main/java/com/jwyoo/api/graph/repository/CharacterNodeRepository.java` (15개 쿼리 메서드)
+- `api-server/src/main/java/com/jwyoo/api/graph/service/GraphQueryService.java` (15개 서비스 메서드)
+- `api-server/src/main/java/com/jwyoo/api/graph/controller/GraphController.java` (15개 엔드포인트)
+
+**실제 소요 시간**: 약 5시간
+
+---
+
+#### Task 109: 관계 그래프 시각화 개선 ✅
+**완료 날짜**: 2025-11-06
+
+**프론트엔드 구현**:
+- [x] `/graph-view` 페이지 구현 (React Flow 기반)
+  - Dagre 자동 레이아웃 알고리즘
+  - 관계 유형별 색상 구분 (friend, rival, family, lover, enemy)
+  - 노드 클릭/드래그 인터랙션
+  - 중심 인물 Top 5 사이드바
+  - 데이터 동기화 버튼
+  - 새로고침 버튼
+  - React Flow Controls (확대/축소/전체보기)
+  - MiniMap 네비게이션
+
+- [x] `/graph-timeline` 페이지 구현 (Chart.js 기반)
+  - 에피소드 범위 선택 (시작/종료)
+  - 네트워크 밀도 변화 그래프 (Line Chart)
+  - 캐릭터 관계 진화 추적 (Line Chart)
+  - 새로운 관계 형성 목록
+  - 캐릭터 ID 검색 및 조회
+
+- [x] API 클라이언트 구현 (`lib/graph.ts`)
+  - getAllCharacters()
+  - getCharacter(characterId)
+  - getNDegreeFriends(characterId, depth)
+  - getCharactersByRelationType(characterId, type)
+  - getShortestPath(from, to)
+  - getAllRelationships()
+  - getRelationshipsByEpisode(episodeId)
+  - getCentralCharacters(limit)
+  - syncAllData()
+  - syncProjectData(projectId)
+  - getDegreeCentrality(limit)
+  - getBetweennessCentrality(limit)
+  - getClosenessCentrality(limit)
+  - getWeightedDegree(limit)
+  - getAllCentralities(limit)
+  - getRelationshipsByEpisodeRange(start, end)
+  - getCharacterRelationshipEvolution(characterId)
+  - getRelationshipTimeline(char1, char2)
+  - getNetworkDensityByEpisode(episodeId)
+  - getNewRelationshipsByEpisode()
+
+- [x] 의존성 추가 (package.json)
+  - chart.js ^4.5.1
+  - react-chartjs-2 ^5.3.1
+
+**구현된 파일**:
+- `frontend/app/graph-view/page.tsx` (그래프 시각화 페이지)
+- `frontend/app/graph-timeline/page.tsx` (타임라인 페이지)
+- `frontend/lib/graph.ts` (API 클라이언트)
+- `frontend/package.json` (의존성 추가)
+
+**실제 소요 시간**: 약 4시간
+
+---
+
+**Phase 9 총 소요 시간**: 약 13시간 (완료)
+
+**주요 기술**:
+- Spring Data Neo4j 7.x
+- Neo4j Cypher Query Language
+- React Flow 11.x (그래프 시각화)
+- Chart.js 4.x (시계열 차트)
+- Dagre (자동 레이아웃)
+
+**주요 성과**:
+1. 복잡한 관계 쿼리 성능 향상 (N단계 탐색, 최단 경로)
+2. 그래프 알고리즘 기반 분석 (Centrality Metrics)
+3. 시간축 관계 변화 추적 및 시각화
+4. RDB ↔ Neo4j 자동 동기화 시스템
+5. 인터랙티브 그래프 시각화 UI
 
 ---
 
@@ -317,9 +512,10 @@
 | Phase 5 | 18-20시간 | 완료됨 | ✅ |
 | Phase 6 | 15-18시간 | 완료됨 | ✅ |
 | Phase 8 | 12-15시간 | 완료됨 | ✅ |
+| Phase 9 | 10-12시간 | 약 13시간 | ✅ |
 | Phase 10 | 40+ 시간 | 약 38시간 (현재까지) | ⏳ |
 
-**총 완료 시간**: 약 150시간 이상
+**총 완료 시간**: 약 165시간 이상
 
 ---
 

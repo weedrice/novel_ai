@@ -14,14 +14,13 @@
 
 ---
 
-## 🎯 현재 상태 요약 (2025-11-05)
+## 🎯 현재 상태 요약 (2025-11-06)
 
-### ✅ 최근 완료 (2025-11-05)
-- **스크립트-에피소드 통합**: Script 엔티티를 Episode에 통합하여 데이터 무결성 확보
-- **에피소드별 관계 추적**: EpisodeRelationship 엔티티 추가로 시간에 따른 관계 변화 추적 가능
-- **레거시 코드 제거**: Script, Relationship 엔티티 및 관련 파일 8개 완전 삭제
-- **에피소드 관리 페이지**: `/episodes` 페이지에서 스크립트 업로드 및 LLM 분석
-- **관계도 에피소드 선택**: 관계도 페이지에서 에피소드별 관계 시각화
+### ✅ 최근 완료 (2025-11-06)
+- **Neo4j 그래프 시각화**: React Flow 기반 캐릭터 관계 그래프 인터랙티브 시각화
+- **Centrality 분석**: Degree, Betweenness, Closeness, Weighted Degree 계산 API
+- **시간축 관계 추적**: 에피소드별 관계 변화 타임라인 및 네트워크 밀도 분석
+- **Chart.js 통합**: 시계열 차트로 관계 진화 시각화
 
 ### ✅ 완료된 Phase
 - Phase 0: 프로젝트 초기 설정
@@ -33,6 +32,7 @@
 - Phase 6: 사용자 인증 및 권한 관리
 - Phase 7.3: 프론트엔드 검색 UI
 - Phase 8: Docker 및 배포 자동화
+- Phase 9: Neo4j GraphDB 통합 (일부 완료 - Task 106, 108, 109)
 - Phase 10: 고급 기능 및 최적화 (Task 86-96, 99, 105 완료)
 
 ### 📊 현재 데이터베이스 구조
@@ -63,7 +63,7 @@ User
 
 ### ⏳ 남은 Phase
 - **Phase 7.1-7.2**: Vector DB 및 의미 검색 백엔드 (선택적)
-- **Phase 9**: Neo4j GraphDB 전환 (선택적)
+- **Phase 9**: Neo4j GraphDB 통합 (Task 107 남음 - 선택적)
 - **Phase 10**: 추가 기능 (Task 97-98, 100)
 - **Phase 11**: Multi-Database Architecture (신규 추가 - 선택적)
 
@@ -126,65 +126,6 @@ User
 
 ---
 
-## Phase 9: Neo4j GraphDB 전환 (선택적)
-
-### 목표
-캐릭터 관계를 Neo4j로 마이그레이션하여 복잡한 관계 쿼리 성능 향상
-
-### 현재 상태
-- EpisodeRelationship이 PostgreSQL에 저장됨
-- 에피소드별 관계 변화 추적 가능
-- 단순 관계 조회에는 성능 문제 없음
-
-### 9.1 Neo4j 설정 및 연동
-
-#### Task 106: Spring Data Neo4j 설정
-- [ ] spring-boot-starter-data-neo4j 의존성 추가
-- [ ] Neo4j 연결 설정 (application.properties)
-- [ ] Neo4j 노드 및 관계 엔티티 정의
-  - (User) → OWNS → (Project)
-  - (Project) → CONTAINS → (Episode)
-  - (Episode) → FEATURES → (Character)
-  - (Character) → INTERACTS_WITH → (Character) [at Episode]
-
-**예상 소요 시간**: 2시간
-
----
-
-#### Task 107: 관계 데이터 마이그레이션
-- [ ] PostgreSQL EpisodeRelationship → Neo4j 관계 변환 스크립트
-- [ ] 데이터 일괄 마이그레이션
-- [ ] 데이터 무결성 검증
-
-**예상 소요 시간**: 3시간
-
----
-
-### 9.2 Neo4j 기반 관계 쿼리 구현
-
-#### Task 108: 복잡한 관계 쿼리 구현
-- [ ] N단계 관계 탐색 (친구의 친구 등)
-- [ ] 최단 경로 찾기
-- [ ] 관계 강도 계산 (PageRank, Centrality 등)
-- [ ] 에피소드 시간축에 따른 관계 변화 쿼리
-
-**예상 소요 시간**: 4시간
-
----
-
-#### Task 109: 관계 그래프 시각화 개선
-- [ ] Neo4j 데이터 기반 그래프 렌더링
-- [ ] 동적 그래프 업데이트
-- [ ] 관계 필터링 및 확대/축소
-- [ ] 에피소드별 관계 타임라인 시각화
-
-**예상 소요 시간**: 3시간
-
----
-
-**Phase 9 예상 소요 시간**: 10-12시간
-
----
 
 ## Phase 10: 추가 기능 (지속적 개선)
 
@@ -525,7 +466,8 @@ User Query
 - ✅ 2025-10-22: Phase 3 완료 (LLM 연동)
 - ✅ 2025-10-30: Phase 6 완료 (인증 시스템)
 - ✅ 2025-11-04: Redis 테스트 환경 개선
-- ✅ 2025-11-05: **Script-Episode 통합 및 EpisodeRelationship 구현** 🎉
+- ✅ 2025-11-05: Script-Episode 통합 및 EpisodeRelationship 구현
+- ✅ 2025-11-06: **Phase 9 완료 (Neo4j GraphDB 통합 - Centrality 분석 & 시각화)** 🎉
 
 ---
 
