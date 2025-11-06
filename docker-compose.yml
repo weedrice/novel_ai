@@ -102,7 +102,7 @@ services:
       start_period: 30s
 
   postgres:
-    image: ankane/pgvector:v0.5.1  # PostgreSQL with pgvector extension
+    image: pgvector/pgvector:pg16  # PostgreSQL 16 with pgvector extension
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
