@@ -102,7 +102,7 @@ services:
       start_period: 30s
 
   postgres:
-    image: postgres:16-alpine
+    image: ankane/pgvector:v0.5.1  # PostgreSQL with pgvector extension
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
@@ -112,6 +112,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./backups/postgres:/backups  # 백업 디렉토리 마운트
+      - ./api-server/src/main/resources/db/init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql
     networks:
       - app-network
     healthcheck:

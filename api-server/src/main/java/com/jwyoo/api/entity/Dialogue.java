@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
     @Index(name = "idx_dialogue_character_id", columnList = "character_id"),
     @Index(name = "idx_dialogue_order_scene", columnList = "dialogueOrder,scene_id")
 })
+@EntityListeners(com.jwyoo.api.event.EmbeddingSyncEventListener.class)
 @Getter
 @Setter
 @NoArgsConstructor

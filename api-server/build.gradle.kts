@@ -42,6 +42,12 @@ dependencies {
     // Neo4j GraphDB (Phase 9 - Task 106)
     implementation("org.springframework.boot:spring-boot-starter-data-neo4j")
 
+    // pgvector for Vector DB (Phase 7 - Task 101)
+    implementation("com.pgvector:pgvector:0.1.4")
+
+    // OpenAI API for embeddings (Phase 7 - Task 102)
+    implementation("com.theokanning.openai-gpt3-java:service:0.18.2")
+
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
