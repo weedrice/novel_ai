@@ -237,4 +237,228 @@ public class GraphController {
             ));
         }
     }
+
+    /**
+     * Degree Centrality 계산
+     * GET /graph/centrality/degree?limit=10
+     *
+     * @param limit 결과 개수 (기본값: 10)
+     */
+    @GetMapping("/centrality/degree")
+    public ResponseEntity<Map<String, Object>> getDegreeCentrality(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        log.info("GET /graph/centrality/degree?limit={} - Calculating Degree Centrality", limit);
+
+        List<Object> results = graphQueryService.calculateDegreeCentrality(limit);
+
+        Map<String, Object> response = Map.of(
+            "metric", "degreeCentrality",
+            "results", results,
+            "count", results.size()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Betweenness Centrality 계산
+     * GET /graph/centrality/betweenness?limit=10
+     *
+     * @param limit 결과 개수 (기본값: 10)
+     */
+    @GetMapping("/centrality/betweenness")
+    public ResponseEntity<Map<String, Object>> getBetweennessCentrality(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        log.info("GET /graph/centrality/betweenness?limit={} - Calculating Betweenness Centrality", limit);
+
+        List<Object> results = graphQueryService.calculateBetweennessCentrality(limit);
+
+        Map<String, Object> response = Map.of(
+            "metric", "betweennessCentrality",
+            "results", results,
+            "count", results.size()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Closeness Centrality 계산
+     * GET /graph/centrality/closeness?limit=10
+     *
+     * @param limit 결과 개수 (기본값: 10)
+     */
+    @GetMapping("/centrality/closeness")
+    public ResponseEntity<Map<String, Object>> getClosenessCentrality(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        log.info("GET /graph/centrality/closeness?limit={} - Calculating Closeness Centrality", limit);
+
+        List<Object> results = graphQueryService.calculateClosenessCentrality(limit);
+
+        Map<String, Object> response = Map.of(
+            "metric", "closenessCentrality",
+            "results", results,
+            "count", results.size()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Weighted Degree 계산
+     * GET /graph/centrality/weighted?limit=10
+     *
+     * @param limit 결과 개수 (기본값: 10)
+     */
+    @GetMapping("/centrality/weighted")
+    public ResponseEntity<Map<String, Object>> getWeightedDegree(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        log.info("GET /graph/centrality/weighted?limit={} - Calculating Weighted Degree", limit);
+
+        List<Object> results = graphQueryService.calculateWeightedDegree(limit);
+
+        Map<String, Object> response = Map.of(
+            "metric", "weightedDegree",
+            "results", results,
+            "count", results.size()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 모든 Centrality 지표 한번에 계산
+     * GET /graph/centrality/all?limit=10
+     *
+     * @param limit 각 지표당 결과 개수 (기본값: 10)
+     */
+    @GetMapping("/centrality/all")
+    public ResponseEntity<Map<String, Object>> getAllCentralities(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        log.info("GET /graph/centrality/all?limit={} - Calculating all centrality metrics", limit);
+
+        Map<String, Object> allMetrics = graphQueryService.calculateAllCentralities(limit);
+
+        return ResponseEntity.ok(allMetrics);
+    }
+
+    /**
+     * 에피소드 범위별 관계 변화 조회
+     * GET /graph/timeline/range?start=1&end=10
+     *
+     * @param start 시작 에피소드 ID
+     * @param end 종료 에피소드 ID
+     */
+    @GetMapping("/timeline/range")
+    public ResponseEntity<Map<String, Object>> getRelationshipsByEpisodeRange(
+            @RequestParam Long start,
+            @RequestParam Long end
+    ) {
+        log.info("GET /graph/timeline/range?start={}&end={} - Fetching relationships by episode range", start, end);
+
+        List<Object> relationships = graphQueryService.findRelationshipsByEpisodeRange(start, end);
+
+        Map<String, Object> response = Map.of(
+            "startEpisodeId", start,
+            "endEpisodeId", end,
+            "relationships", relationships,
+            "count", relationships.size()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 특정 캐릭터의 관계 진화 추적
+     * GET /graph/timeline/character/{characterId}
+     *
+     * @param characterId 캐릭터 ID
+     */
+    @GetMapping("/timeline/character/{characterId}")
+    public ResponseEntity<Map<String, Object>> getCharacterRelationshipEvolution(
+            @PathVariable String characterId
+    ) {
+        log.info("GET /graph/timeline/character/{} - Fetching character relationship evolution", characterId);
+
+        List<Object> evolution = graphQueryService.findCharacterRelationshipEvolution(characterId);
+
+        Map<String, Object> response = Map.of(
+            "characterId", characterId,
+            "evolution", evolution,
+            "count", evolution.size()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 두 캐릭터 간 관계 타임라인
+     * GET /graph/timeline/relationship?char1=alice&char2=bob
+     *
+     * @param char1 캐릭터 1 ID
+     * @param char2 캐릭터 2 ID
+     */
+    @GetMapping("/timeline/relationship")
+    public ResponseEntity<Map<String, Object>> getRelationshipTimeline(
+            @RequestParam String char1,
+            @RequestParam String char2
+    ) {
+        log.info("GET /graph/timeline/relationship?char1={}&char2={} - Fetching relationship timeline", char1, char2);
+
+        List<Object> timeline = graphQueryService.findRelationshipTimeline(char1, char2);
+
+        Map<String, Object> response = Map.of(
+            "character1", char1,
+            "character2", char2,
+            "timeline", timeline,
+            "count", timeline.size()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 에피소드별 네트워크 밀도 계산
+     * GET /graph/timeline/density/{episodeId}
+     *
+     * @param episodeId 에피소드 ID
+     */
+    @GetMapping("/timeline/density/{episodeId}")
+    public ResponseEntity<Map<String, Object>> getNetworkDensityByEpisode(
+            @PathVariable Long episodeId
+    ) {
+        log.info("GET /graph/timeline/density/{} - Calculating network density", episodeId);
+
+        Object density = graphQueryService.calculateNetworkDensityByEpisode(episodeId);
+
+        Map<String, Object> response = Map.of(
+            "episodeId", episodeId,
+            "density", density
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 새로운 관계 추가 현황 조회
+     * GET /graph/timeline/new-relationships
+     */
+    @GetMapping("/timeline/new-relationships")
+    public ResponseEntity<Map<String, Object>> getNewRelationshipsByEpisode() {
+        log.info("GET /graph/timeline/new-relationships - Fetching new relationships by episode");
+
+        List<Object> newRelationships = graphQueryService.findNewRelationshipsByEpisode();
+
+        Map<String, Object> response = Map.of(
+            "newRelationships", newRelationships,
+            "count", newRelationships.size()
+        );
+
+        return ResponseEntity.ok(response);
+    }
 }

@@ -174,4 +174,166 @@ public class GraphQueryService {
                 return new IllegalArgumentException("Character not found in graph: " + characterId);
             });
     }
+
+    /**
+     * Degree Centrality 계산
+     * 가장 많은 직접 연결을 가진 캐릭터 찾기
+     * @param limit 결과 개수
+     * @return Degree Centrality 순위
+     */
+    public List<Object> calculateDegreeCentrality(int limit) {
+        log.info("Calculating Degree Centrality (top {})", limit);
+
+        Long projectId = projectService.getCurrentProject().getId();
+        List<Object> results = characterNodeRepository.calculateDegreeCentrality(projectId, limit);
+
+        log.info("Degree Centrality calculated: {} results", results.size());
+        return results;
+    }
+
+    /**
+     * Betweenness Centrality 계산
+     * 다른 캐릭터들 사이의 경로에 자주 등장하는 캐릭터 (중개자 역할)
+     * @param limit 결과 개수
+     * @return Betweenness Centrality 순위
+     */
+    public List<Object> calculateBetweennessCentrality(int limit) {
+        log.info("Calculating Betweenness Centrality (top {})", limit);
+
+        Long projectId = projectService.getCurrentProject().getId();
+        List<Object> results = characterNodeRepository.calculateBetweennessCentrality(projectId, limit);
+
+        log.info("Betweenness Centrality calculated: {} results", results.size());
+        return results;
+    }
+
+    /**
+     * Closeness Centrality 계산
+     * 다른 모든 캐릭터와의 평균 거리가 가장 짧은 캐릭터
+     * @param limit 결과 개수
+     * @return Closeness Centrality 순위
+     */
+    public List<Object> calculateClosenessCentrality(int limit) {
+        log.info("Calculating Closeness Centrality (top {})", limit);
+
+        Long projectId = projectService.getCurrentProject().getId();
+        List<Object> results = characterNodeRepository.calculateClosenessCentrality(projectId, limit);
+
+        log.info("Closeness Centrality calculated: {} results", results.size());
+        return results;
+    }
+
+    /**
+     * Weighted Degree 계산
+     * closeness 값을 가중치로 사용한 관계 강도 계산
+     * @param limit 결과 개수
+     * @return Weighted Degree 순위
+     */
+    public List<Object> calculateWeightedDegree(int limit) {
+        log.info("Calculating Weighted Degree (top {})", limit);
+
+        Long projectId = projectService.getCurrentProject().getId();
+        List<Object> results = characterNodeRepository.calculateWeightedDegree(projectId, limit);
+
+        log.info("Weighted Degree calculated: {} results", results.size());
+        return results;
+    }
+
+    /**
+     * 모든 Centrality 지표를 한번에 계산
+     * @param limit 각 지표당 결과 개수
+     * @return 모든 지표 결과
+     */
+    public Map<String, Object> calculateAllCentralities(int limit) {
+        log.info("Calculating all centrality metrics (top {})", limit);
+
+        return Map.of(
+            "degreeCentrality", calculateDegreeCentrality(limit),
+            "betweennessCentrality", calculateBetweennessCentrality(limit),
+            "closenessCentrality", calculateClosenessCentrality(limit),
+            "weightedDegree", calculateWeightedDegree(limit)
+        );
+    }
+
+    /**
+     * 에피소드 범위별 관계 변화 조회
+     * @param startEpisodeId 시작 에피소드 ID
+     * @param endEpisodeId 종료 에피소드 ID
+     * @return 에피소드 범위 내 관계 목록
+     */
+    public List<Object> findRelationshipsByEpisodeRange(Long startEpisodeId, Long endEpisodeId) {
+        log.info("Finding relationships from episode {} to {}", startEpisodeId, endEpisodeId);
+
+        if (startEpisodeId > endEpisodeId) {
+            throw new IllegalArgumentException("Start episode ID must be less than or equal to end episode ID");
+        }
+
+        Long projectId = projectService.getCurrentProject().getId();
+        List<Object> relationships = characterNodeRepository.findRelationshipsByEpisodeRange(
+            projectId, startEpisodeId, endEpisodeId
+        );
+
+        log.info("Found {} relationships in episode range {}-{}", relationships.size(), startEpisodeId, endEpisodeId);
+        return relationships;
+    }
+
+    /**
+     * 특정 캐릭터의 관계 진화 추적
+     * @param characterId 캐릭터 ID
+     * @return 시간별 관계 진화 데이터
+     */
+    public List<Object> findCharacterRelationshipEvolution(String characterId) {
+        log.info("Finding relationship evolution for character: {}", characterId);
+
+        Long projectId = projectService.getCurrentProject().getId();
+        List<Object> evolution = characterNodeRepository.findCharacterRelationshipEvolution(characterId, projectId);
+
+        log.info("Found {} relationship evolution entries for character {}", evolution.size(), characterId);
+        return evolution;
+    }
+
+    /**
+     * 두 캐릭터 간 관계 타임라인
+     * @param char1Id 캐릭터 1 ID
+     * @param char2Id 캐릭터 2 ID
+     * @return 관계 변화 타임라인
+     */
+    public List<Object> findRelationshipTimeline(String char1Id, String char2Id) {
+        log.info("Finding relationship timeline between {} and {}", char1Id, char2Id);
+
+        Long projectId = projectService.getCurrentProject().getId();
+        List<Object> timeline = characterNodeRepository.findRelationshipTimeline(char1Id, char2Id, projectId);
+
+        log.info("Found {} timeline entries for relationship {}-{}", timeline.size(), char1Id, char2Id);
+        return timeline;
+    }
+
+    /**
+     * 에피소드별 네트워크 밀도 계산
+     * @param episodeId 에피소드 ID
+     * @return 네트워크 밀도 정보
+     */
+    public Object calculateNetworkDensityByEpisode(Long episodeId) {
+        log.info("Calculating network density for episode: {}", episodeId);
+
+        Long projectId = projectService.getCurrentProject().getId();
+        Object density = characterNodeRepository.calculateNetworkDensityByEpisode(episodeId, projectId);
+
+        log.info("Network density calculated for episode {}", episodeId);
+        return density;
+    }
+
+    /**
+     * 새로운 관계 추가 현황 조회
+     * @return 에피소드별 새 관계 목록
+     */
+    public List<Object> findNewRelationshipsByEpisode() {
+        log.info("Finding new relationships by episode");
+
+        Long projectId = projectService.getCurrentProject().getId();
+        List<Object> newRelationships = characterNodeRepository.findNewRelationshipsByEpisode(projectId);
+
+        log.info("Found {} new relationship entries", newRelationships.size());
+        return newRelationships;
+    }
 }
