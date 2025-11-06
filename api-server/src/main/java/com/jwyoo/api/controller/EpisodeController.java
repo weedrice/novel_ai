@@ -1,5 +1,6 @@
 package com.jwyoo.api.controller;
 
+import com.jwyoo.api.dto.EpisodeDto;
 import com.jwyoo.api.dto.PlotAnalysisDto;
 import com.jwyoo.api.entity.Episode;
 import com.jwyoo.api.service.EpisodeService;
@@ -24,6 +25,9 @@ public class EpisodeController {
     private final EpisodeService episodeService;
     private final PlotAnalysisService plotAnalysisService;
 
+    /**
+     * 에피소드 목록 조회 (현재 프로젝트)
+     */
     @GetMapping
     public List<Map<String, Object>> getEpisodes() {
         return episodeService.getAllEpisodes().stream()
@@ -34,6 +38,67 @@ public class EpisodeController {
                 "order", episode.getEpisodeOrder()
             ))
             .collect(Collectors.toList());
+    }
+
+    /**
+     * 에피소드 상세 조회
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<Episode> getEpisode(@PathVariable Long id) {
+        log.info("GET /episodes/{} - Fetching episode details", id);
+        Episode episode = episodeService.getEpisodeById(id);
+        return ResponseEntity.ok(episode);
+    }
+
+    /**
+     * 에피소드 생성
+     */
+    @PostMapping
+    public ResponseEntity<Episode> createEpisode(@RequestBody EpisodeDto.Request request) {
+        log.info("POST /episodes - Creating new episode: title={}, order={}",
+                request.getTitle(), request.getEpisodeOrder());
+
+        Episode episode = Episode.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .episodeOrder(request.getEpisodeOrder())
+                .scriptText(request.getScriptText())
+                .scriptFormat(request.getScriptFormat())
+                .build();
+
+        Episode created = episodeService.createEpisode(episode);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    /**
+     * 에피소드 수정
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Episode> updateEpisode(
+            @PathVariable Long id,
+            @RequestBody EpisodeDto.Request request) {
+        log.info("PUT /episodes/{} - Updating episode", id);
+
+        Episode episode = Episode.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .episodeOrder(request.getEpisodeOrder())
+                .scriptText(request.getScriptText())
+                .scriptFormat(request.getScriptFormat())
+                .build();
+
+        Episode updated = episodeService.updateEpisode(id, episode);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * 에피소드 삭제
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEpisode(@PathVariable Long id) {
+        log.info("DELETE /episodes/{} - Deleting episode", id);
+        episodeService.deleteEpisode(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**

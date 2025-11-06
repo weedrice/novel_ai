@@ -106,9 +106,25 @@ public class EpisodeService {
         String oldTitle = existing.getTitle();
         Integer oldOrder = existing.getEpisodeOrder();
 
-        existing.setTitle(episode.getTitle());
-        existing.setDescription(episode.getDescription());
-        existing.setEpisodeOrder(episode.getEpisodeOrder());
+        // 기본 정보 업데이트
+        if (episode.getTitle() != null) {
+            existing.setTitle(episode.getTitle());
+        }
+        if (episode.getDescription() != null) {
+            existing.setDescription(episode.getDescription());
+        }
+        if (episode.getEpisodeOrder() != null) {
+            existing.setEpisodeOrder(episode.getEpisodeOrder());
+        }
+
+        // 스크립트 텍스트 업데이트
+        if (episode.getScriptText() != null) {
+            existing.setScriptText(episode.getScriptText());
+            log.debug("Updated scriptText for episode: id={}, length={}", id, episode.getScriptText().length());
+        }
+        if (episode.getScriptFormat() != null) {
+            existing.setScriptFormat(episode.getScriptFormat());
+        }
 
         Episode updated = episodeRepository.save(existing);
         log.info("Episode updated: id={}, title: {} -> {}, order: {} -> {}",
