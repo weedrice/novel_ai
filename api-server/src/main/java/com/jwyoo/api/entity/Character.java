@@ -14,7 +14,7 @@ import java.util.List;
     @Index(name = "idx_character_project_id", columnList = "project_id"),
     @Index(name = "idx_character_id_project", columnList = "characterId,project_id")
 })
-@EntityListeners(com.jwyoo.api.graph.event.GraphSyncEventListener.class)
+@EntityListeners(com.jwyoo.api.graph.event.CharacterSyncEventListener.class)
 @Getter
 @Setter
 @NoArgsConstructor

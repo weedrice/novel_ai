@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
     @Index(name = "idx_episode_rel_episode", columnList = "episode_id"),
     @Index(name = "idx_episode_rel_characters", columnList = "from_character_id,to_character_id,episode_id")
 })
-@EntityListeners(com.jwyoo.api.graph.event.GraphSyncEventListener.class)
+@EntityListeners(com.jwyoo.api.graph.event.EpisodeRelationshipSyncEventListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
