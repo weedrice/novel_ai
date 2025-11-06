@@ -13,6 +13,13 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// 디버그 로그 헬퍼 (개발 환경에서만)
+const debugLog = (...args: any[]) => {
+  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG_THEME === 'true') {
+    console.log('[ThemeContext]', ...args);
+  }
+};
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
@@ -31,37 +38,37 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // theme 상태가 변경될 때마다 DOM 업데이트
   useEffect(() => {
-    console.log('[ThemeContext] useEffect triggered. Mounted:', mounted, 'Theme:', theme);
+    debugLog('useEffect triggered. Mounted:', mounted, 'Theme:', theme);
     if (!mounted) {
-      console.log('[ThemeContext] Not mounted yet, skipping DOM update');
+      debugLog('Not mounted yet, skipping DOM update');
       return;
     }
 
     // HTML 클래스에 다크 모드 적용
-    console.log('[ThemeContext] Updating DOM. Theme:', theme);
+    debugLog('Updating DOM. Theme:', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
-      console.log('[ThemeContext] Added dark class to documentElement');
+      debugLog('Added dark class to documentElement');
     } else {
       document.documentElement.classList.remove('dark');
-      console.log('[ThemeContext] Removed dark class from documentElement');
+      debugLog('Removed dark class from documentElement');
     }
 
     // localStorage에 저장
     localStorage.setItem('theme', theme);
-    console.log('[ThemeContext] Saved to localStorage:', theme);
+    debugLog('Saved to localStorage:', theme);
   }, [theme, mounted]);
 
   const setTheme = (newTheme: Theme) => {
-    console.log('[ThemeContext] setTheme called:', newTheme);
+    debugLog('setTheme called:', newTheme);
     setThemeState(newTheme);
     // DOM 업데이트와 localStorage 저장은 useEffect에서 처리됨
   };
 
   const toggleTheme = () => {
-    console.log('[ThemeContext] toggleTheme called. Current theme:', theme);
+    debugLog('toggleTheme called. Current theme:', theme);
     const newTheme = theme === 'light' ? 'dark' : 'light';
-    console.log('[ThemeContext] Setting new theme:', newTheme);
+    debugLog('Setting new theme:', newTheme);
     setTheme(newTheme);
   };
 
