@@ -56,12 +56,13 @@ public class LlmClient {
                     });
             log.debug("Found speaker character: id={}, name={}", speaker.getId(), speaker.getName());
 
-            // 대상 캐릭터 이름 목록 조회
+            // 대상 캐릭터 이름 목록 조회 (배치 조회로 N+1 문제 방지)
             log.debug("Fetching target character names for: {}", request.targetIds());
+            List<Character> targetCharacters = characterRepository.findByCharacterIdIn(request.targetIds());
+            Map<String, String> characterIdToName = targetCharacters.stream()
+                    .collect(Collectors.toMap(Character::getCharacterId, Character::getName));
             List<String> targetNames = request.targetIds().stream()
-                    .map(targetId -> characterRepository.findByCharacterId(targetId)
-                            .map(Character::getName)
-                            .orElse(targetId))
+                    .map(targetId -> characterIdToName.getOrDefault(targetId, targetId))
                     .collect(Collectors.toList());
             log.debug("Target character names: {}", targetNames);
 
@@ -168,11 +169,12 @@ public class LlmClient {
             Character speaker = characterRepository.findByCharacterId(request.speakerId())
                     .orElseThrow(() -> new IllegalArgumentException("Speaker not found: " + request.speakerId()));
 
-            // 대상 캐릭터 이름 목록 조회
+            // 대상 캐릭터 이름 목록 조회 (배치 조회로 N+1 문제 방지)
+            List<Character> targetCharacters = characterRepository.findByCharacterIdIn(request.targetIds());
+            Map<String, String> characterIdToName = targetCharacters.stream()
+                    .collect(Collectors.toMap(Character::getCharacterId, Character::getName));
             List<String> targetNames = request.targetIds().stream()
-                    .map(targetId -> characterRepository.findByCharacterId(targetId)
-                            .map(Character::getName)
-                            .orElse(targetId))
+                    .map(targetId -> characterIdToName.getOrDefault(targetId, targetId))
                     .collect(Collectors.toList());
 
             // 캐릭터 정보 DTO 생성

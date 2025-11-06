@@ -1,21 +1,25 @@
 import axios from 'axios';
+import { env } from './env';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+// 브라우저 환경 체크 유틸리티
+const isBrowser = typeof window !== 'undefined';
 
 // Axios 인스턴스 생성
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: env.API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// 요청 인터셉터: JWT 토큰 자동 추가
+// 요청 인터셉터: JWT 토큰 자동 추가 (브라우저 환경에서만)
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (isBrowser) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -45,6 +49,11 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // 브라우저 환경에서만 토큰 갱신 처리
+    if (!isBrowser) {
+      return Promise.reject(error);
+    }
+
     // 401 에러이고, 아직 재시도하지 않은 요청인 경우
     if (error.response?.status === 401 && !originalRequest._retry) {
       // /auth/refresh 요청이 실패한 경우는 바로 로그아웃
@@ -53,8 +62,7 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
 
-        if (typeof window !== 'undefined' &&
-            !window.location.pathname.startsWith('/login') &&
+        if (!window.location.pathname.startsWith('/login') &&
             !window.location.pathname.startsWith('/signup')) {
           window.location.href = '/login';
         }
@@ -86,8 +94,7 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
 
-        if (typeof window !== 'undefined' &&
-            !window.location.pathname.startsWith('/login') &&
+        if (!window.location.pathname.startsWith('/login') &&
             !window.location.pathname.startsWith('/signup')) {
           window.location.href = '/login';
         }
@@ -119,8 +126,7 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
 
-        if (typeof window !== 'undefined' &&
-            !window.location.pathname.startsWith('/login') &&
+        if (!window.location.pathname.startsWith('/login') &&
             !window.location.pathname.startsWith('/signup')) {
           window.location.href = '/login';
         }

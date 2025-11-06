@@ -54,8 +54,8 @@ replay_pid*
 *.tmp.*
 nul
 
-# Test files
-test_*.py
+# Test files (LLM server specific)
+llm-server/test_*.py
 
 # Backups
 backups/

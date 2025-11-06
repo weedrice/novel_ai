@@ -11,7 +11,7 @@
 - [x] Gradle 기반 Spring Boot 3.4 프로젝트 구조 생성
 - [x] Next.js 15 프론트엔드 프로젝트 초기화
 - [x] FastAPI 기반 LLM 서버 초기화
-- [x] Java 21 → Java 25 업그레이드 완료
+- [x] Java 21 설정 완료
 - [x] 기본 CORS 설정 구성
 - [x] 프로젝트 문서화 (README.md)
 - [x] Java 버전 관리 파일 생성 (.tool-versions, .sdkmanrc, .java-version)

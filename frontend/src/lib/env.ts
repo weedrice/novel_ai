@@ -63,10 +63,11 @@ export const debugLog = (...args: any[]) => {
 };
 
 /**
- * 환경 변수 정보 출력 (개발 환경에서만)
+ * 환경 변수 정보 출력 (명시적 디버그 모드에서만)
+ * 사용법: DEBUG=true npm run dev
  */
-if (isDevelopment) {
-  console.log('Environment Configuration:', {
+if (isDevelopment && process.env.DEBUG === 'true') {
+  console.log('[ENV] Configuration:', {
     API_BASE_URL: env.API_BASE_URL,
     NODE_ENV: env.NODE_ENV,
   });
