@@ -5,9 +5,11 @@ import com.jwyoo.api.repository.RefreshTokenRepository;
 import com.jwyoo.api.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -16,11 +18,21 @@ import java.util.Optional;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final long refreshTokenExpiration;
+
+    public RefreshTokenService(
+            RefreshTokenRepository refreshTokenRepository,
+            JwtTokenProvider jwtTokenProvider,
+            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration
+    ) {
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.refreshTokenExpiration = refreshTokenExpiration;
+    }
 
     /**
      * Refresh Token 생성 및 저장
@@ -36,15 +48,18 @@ public class RefreshTokenService {
         // 새 Refresh Token 생성
         String tokenValue = jwtTokenProvider.generateRefreshToken(username);
 
+        // 만료 시간 계산 (설정 파일의 jwt.refresh-token-expiration 사용)
+        LocalDateTime expiryDate = LocalDateTime.now().plus(Duration.ofMillis(refreshTokenExpiration));
+
         // DB에 저장
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(tokenValue)
                 .username(username)
-                .expiryDate(LocalDateTime.now().plusDays(7)) // 7일
+                .expiryDate(expiryDate)
                 .build();
 
         refreshTokenRepository.save(refreshToken);
-        log.info("Refresh Token created for user: {}", username);
+        log.info("Refresh Token created for user: {} (expires: {})", username, expiryDate);
 
         return tokenValue;
     }
