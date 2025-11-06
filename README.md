@@ -42,6 +42,13 @@ Novel AI는 소설과 웹툰 등 스토리텔링 콘텐츠의 기획과 제작�
 - **대사 및 관계 분석**: 캐릭터별 대사를 추출하고 캐릭터 간 관계를 자동으로 분석합니다.
 - **LLM 기반 지능형 분석**: 정규식이 아닌 LLM을 활용하여 자연어 이해 기반의 유연한 파싱을 제공합니다.
 
+### Vector DB 기반 의미 검색
+- **PostgreSQL pgvector**: 벡터 데이터베이스 확장을 활용한 고성능 의미 검색을 제공합니다.
+- **OpenAI Embeddings**: text-embedding-ada-002 모델로 텍스트를 1536차원 벡터로 변환합니다.
+- **자동 임베딩 생성**: 캐릭터, 대사, 장면 데이터 생성/수정 시 자동으로 임베딩을 생성합니다.
+- **의미 기반 검색**: 코사인 유사도를 활용하여 키워드가 아닌 의미를 기반으로 검색합니다.
+- **다양한 검색 옵션**: 캐릭터, 대사, 장면을 각각 검색하며 유사도 임계값과 결과 수를 조정할 수 있습니다.
+
 ### 내보내기 및 통합
 - **JSON 내보내기**: 작성한 시나리오를 JSON 형식으로 내보낼 수 있습니다.
 - **마이크로서비스 아키텍처**: 프론트엔드, API 서버, LLM 서버를 분리하여 확장성과 배포 유연성을 확보했습니다.
@@ -61,8 +68,8 @@ Novel AI는 소설과 웹툰 등 스토리텔링 콘텐츠의 기획과 제작�
 - **프론트엔드**: Next.js 15, React 18, TypeScript, Tailwind CSS v4, React Flow, Chart.js
 - **백엔드**: Spring Boot 3.4 (Java 21), Spring Data JPA/Hibernate, Spring Data Neo4j, Gradle 8, Spring Security 6
 - **LLM 서비스**: FastAPI, Python 3.11, 멀티 프로바이더 (OpenAI GPT, Anthropic Claude, Google Gemini)
-- **인프라**: Docker, Docker Compose, (예정) Kubernetes, GitHub Actions 기반 CI/CD
-- **데이터베이스**: PostgreSQL (RDB), Neo4j (GraphDB), H2 (개발 환경)
+- **인프라**: Docker, Docker Compose, Redis, GitHub Actions 기반 CI/CD
+- **데이터베이스**: PostgreSQL 15 + pgvector (RDB, Vector DB), Neo4j (GraphDB), H2 (개발 환경)
 
 ## 사전 요구 사항
 - Docker 및 Docker Compose (권장)
@@ -216,6 +223,7 @@ pytest
 
 ### ✅ 완료된 기능 (2025-11-06 기준)
 - **Phase 0-6 완료**: 프로젝트 초기 설정, 도메인 모델 구축, 관계 그래프 시각화, LLM 연동, 시나리오 생성, 스크립트 분석, 사용자 인증 및 프로젝트 관리
+- **Phase 7 완료**: Vector DB 및 의미 검색 (PostgreSQL pgvector, OpenAI Embeddings, 자동 임베딩 생성)
 - **Phase 9 완료**: Neo4j GraphDB 통합 (Centrality 분석, 시간축 추적, 그래프 시각화)
 - **Phase 10 일부 완료**: UI/UX 개선, 인증 고도화, 데모 모드, 테스트 인프라
 - **백엔드 (api-server)**:
@@ -230,6 +238,13 @@ pytest
   - 포괄적인 로깅 인프라 (모든 서비스 레이어)
   - PostgreSQL 프로덕션 DB 설정
   - 프로젝트별 데이터 필터링 (모든 Repository 및 Service)
+  - **Vector DB 및 의미 검색** (Phase 7):
+    - PostgreSQL pgvector 확장 설치
+    - OpenAI Embeddings API 통합 (text-embedding-ada-002, 1536차원)
+    - EmbeddingSyncEventListener (자동 임베딩 생성 - Character, Dialogue, Scene)
+    - 의미 검색 API 3종 (POST /search/characters, /search/dialogues, /search/scenes)
+    - 코사인 유사도 기반 검색 (pgvector `<=>` 연산자)
+    - 프로젝트별 필터링 및 임계값 설정 지원
   - **Neo4j GraphDB 통합**:
     - CharacterNode 엔티티 및 INTERACTS_WITH 관계
     - 10개 Cypher 쿼리 메서드 (Centrality 분석, 시간축 추적)
@@ -253,6 +268,11 @@ pytest
   - 시나리오 편집기 (장면별 대화 생성)
   - 스크립트 분석 UI (소설/시나리오 업로드 및 자동 분석)
   - LLM 프로바이더 선택 (GPT, Claude, Gemini)
+  - **의미 검색 UI** (Phase 7):
+    - `/search`: 통합 검색 페이지 (캐릭터/대사/장면)
+    - 검색 타입 선택 및 필터 옵션 (캐릭터, 에피소드, 장면)
+    - 유사도 점수 표시 (백분율)
+    - 실시간 검색 결과 카드 표시
   - **Neo4j 그래프 시각화**:
     - `/graph-view`: React Flow 기반 인터랙티브 관계 그래프
     - `/graph-timeline`: Chart.js 기반 시계열 타임라인
@@ -275,6 +295,26 @@ pytest
   - Fallback 더미 응답 시스템
 
 ### 🔧 최근 수정 사항 (2025-11-06)
+- **Phase 7 완료: Vector DB 및 의미 검색**:
+  - **Task 101**: PostgreSQL pgvector 확장 설치 및 Embedding 엔티티 구현
+  - **Task 102**: OpenAI Embeddings API 통합 (text-embedding-ada-002, 1536차원)
+  - **Task 103**: EmbeddingSyncEventListener 구현 (Character, Dialogue, Scene 자동 임베딩)
+  - **Task 104**: 의미 검색 API 3종 구현 (코사인 유사도 기반)
+  - **Task 105**: 프론트엔드 검색 UI (`/search` 페이지)
+
+- **코드 품질 개선**:
+  - **문서 일관성**: DEVELOPMENT_ROADMAP.md Java 버전 수정 (Java 25 → Java 21)
+  - **로깅 최적화**:
+    - `frontend/src/lib/env.ts`: DEBUG 환경 변수로 조건부 로깅
+    - `frontend/src/contexts/ThemeContext.tsx`: NEXT_PUBLIC_DEBUG_THEME으로 조건부 로깅
+  - **쿼리 최적화**:
+    - `api-server/src/main/java/com/jwyoo/api/service/LlmClient.java`: N+1 문제 해결 (배치 쿼리)
+  - **Git 설정**:
+    - `.gitignore`: test_*.py 패턴을 llm-server 디렉토리로 범위 제한
+  - **설정 유연성**:
+    - `RefreshTokenService.java`: jwt.refresh-token-expiration 환경 변수로 설정
+    - `CorsConfig.java`: cors.allowed-origins 환경 변수로 설정 (다중 오리진, HTTPS 지원)
+
 - **Phase 9 완료: Neo4j GraphDB 통합**:
   - **백엔드**: CharacterNode 엔티티 및 CharacterNodeRepository 구현
   - **Centrality 분석**: 5개 API 엔드포인트 (degree, betweenness, closeness, weighted, all)
@@ -416,8 +456,7 @@ pytest
    - ⏳ TTS 음성 합성 (Task 97)
    - ⏳ AI 이미지 생성 (Task 98)
    - ⏳ 엑셀 Import/Export (Task 100)
-2. **Phase 7**: Vector DB 및 의미 검색 (선택적)
-3. **Phase 11**: Multi-Database Architecture (선택적)
+2. **Phase 11**: Multi-Database Architecture (선택적)
 
 **완료된 작업**: [COMPLETED_TASKS.md](COMPLETED_TASKS.md)
 **남은 작업**: [NEXT_TASKS.md](NEXT_TASKS.md)

@@ -1,7 +1,7 @@
 # Completed Tasks - 완료된 작업 목록
 
 > 프로젝트에서 완료된 모든 Phase와 Task 기록
-> 마지막 업데이트: 2025-11-04
+> 마지막 업데이트: 2025-11-06
 
 ---
 
@@ -15,9 +15,11 @@
 - **Phase 4**: ✅ 시나리오 제안 및 편집 기능 (완료)
 - **Phase 5**: ✅ 스크립트 검수 및 분석 도구 (완료)
 - **Phase 6**: ✅ 사용자 인증 및 권한 관리 (완료)
+- **Phase 7**: ✅ Vector DB 및 의미 검색 (완료)
 - **Phase 8**: ✅ Docker 및 배포 자동화 (완료)
 - **Phase 9**: ✅ Neo4j GraphDB 통합 (완료)
 - **Phase 10**: ⏳ 고급 기능 및 최적화 (일부 완료)
+- **Phase 11**: ✅ Multi-Database Architecture (완료)
 
 ### 테스트 통계 (2025-11-04 기준)
 - **백엔드 테스트**: 159개 통과 (Integration/Service tests)
@@ -137,6 +139,230 @@
 - 프로젝트별 데이터 분리
 - 프로젝트 관리 UI (드롭다운, 모달)
 - 사용자별 프로젝트 CRUD
+
+---
+
+## Phase 7: Vector DB 및 의미 검색 ✅
+
+**완료 날짜**: 2025-11-05
+
+### 주요 성과
+- PostgreSQL pgvector 확장 설치
+- OpenAI Embeddings API 통합 (text-embedding-ada-002)
+- 자동 임베딩 생성 시스템 (JPA Event Listener)
+- 의미 기반 검색 API 3종 구현
+- 프론트엔드 검색 UI 구현
+
+### 완료된 Task 목록
+
+#### Task 101: Vector DB 선택 및 설정 ✅
+**완료 날짜**: 2025-11-04
+
+**기술 선택**:
+- PostgreSQL pgvector 확장 선택
+- 이유: 기존 PostgreSQL 사용 중, 별도 DB 불필요, 성능 우수
+
+**pgvector 설정**:
+- [x] Docker Compose에 PostgreSQL 15 + pgvector 추가
+- [x] init.sql에 CREATE EXTENSION vector 추가
+- [x] Embedding 엔티티 생성
+  - `@Entity` JPA 엔티티
+  - `id`, `entityType`, `entityId`, `content`, `embedding` (vector(1536))
+  - OpenAI text-embedding-ada-002 모델 차원수 (1536)
+  - `@Column(columnDefinition = "vector(1536)")` 사용
+
+**구현된 파일**:
+- `docker-compose.yml`
+- `api-server/src/main/resources/db/init.sql`
+- `api-server/src/main/java/com/jwyoo/api/entity/Embedding.java`
+- `api-server/src/main/java/com/jwyoo/api/repository/EmbeddingRepository.java`
+
+**실제 소요 시간**: 약 2시간
+
+---
+
+#### Task 102: OpenAI Embeddings API 통합 ✅
+**완료 날짜**: 2025-11-04
+
+**OpenAI API 설정**:
+- [x] application.properties에 OpenAI API 키 설정
+  - `openai.api-key=${OPENAI_API_KEY:}`
+  - `openai.embedding-model=text-embedding-ada-002`
+- [x] RestTemplate 기반 OpenAI API 클라이언트 구현
+- [x] EmbeddingService 구현
+  - `generateEmbedding(text)` - 텍스트 → 1536차원 벡터
+  - `saveEmbedding(entityType, entityId, content, embedding)` - DB 저장
+  - `deleteEmbeddingsByEntity(entityType, entityId)` - 엔티티 삭제 시 정리
+
+**API 요청/응답 처리**:
+- POST https://api.openai.com/v1/embeddings
+- Authorization: Bearer {API_KEY}
+- Request Body: `{"input": "text", "model": "text-embedding-ada-002"}`
+- Response: `{"data": [{"embedding": [0.1, 0.2, ...]}]}`
+
+**구현된 파일**:
+- `api-server/src/main/resources/application.properties`
+- `api-server/src/main/java/com/jwyoo/api/service/EmbeddingService.java`
+- `api-server/src/main/java/com/jwyoo/api/config/OpenAIConfig.java`
+
+**실제 소요 시간**: 약 3시간
+
+---
+
+#### Task 103: 자동 임베딩 생성 ✅
+**완료 날짜**: 2025-11-04
+
+**JPA Event Listener 구현**:
+- [x] EmbeddingSyncEventListener 생성
+  - `@PostPersist`, `@PostUpdate`, `@PostRemove` 리스너
+  - Character 생성/수정 시 자동 임베딩 생성
+  - Dialogue 생성/수정 시 자동 임베딩 생성
+  - Scene 생성/수정 시 자동 임베딩 생성
+  - 삭제 시 관련 임베딩 자동 삭제
+
+**임베딩 대상 필드**:
+- Character: `name + description + personality`
+- Dialogue: `content`
+- Scene: `location + mood + description`
+
+**에러 처리**:
+- OpenAI API 호출 실패 시 로그 남기고 계속 진행 (트랜잭션 롤백 방지)
+- try-catch로 임베딩 실패가 메인 로직에 영향 없도록 처리
+
+**구현된 파일**:
+- `api-server/src/main/java/com/jwyoo/api/event/EmbeddingSyncEventListener.java`
+
+**실제 소요 시간**: 약 2시간
+
+---
+
+#### Task 104: 의미 검색 API 구현 ✅
+**완료 날짜**: 2025-11-05
+
+**검색 엔드포인트 3개**:
+1. `POST /search/characters` - 캐릭터 의미 검색
+   - 쿼리 텍스트를 임베딩으로 변환
+   - 코사인 유사도 기반 검색 (pgvector `<=>` 연산자)
+   - 유사도 임계값 0.8 이상만 반환
+   - 프로젝트별 필터링 지원
+
+2. `POST /search/dialogues` - 대사 의미 검색
+   - 대사 내용 의미 검색
+   - 캐릭터 필터 지원
+   - 에피소드 필터 지원
+
+3. `POST /search/scenes` - 장면 의미 검색
+   - 장면 분위기/위치 검색
+   - 에피소드 필터 지원
+
+**Native Query 사용**:
+```sql
+SELECT e.*, (1 - (e.embedding <=> CAST(:queryEmbedding AS vector))) AS similarity
+FROM embedding e
+WHERE e.entity_type = :entityType
+  AND (1 - (e.embedding <=> CAST(:queryEmbedding AS vector))) > :threshold
+ORDER BY e.embedding <=> CAST(:queryEmbedding AS vector)
+LIMIT :limit
+```
+
+**SearchController REST API**:
+- POST /search/characters - 캐릭터 검색
+- POST /search/dialogues - 대사 검색
+- POST /search/scenes - 장면 검색
+- Request Body: `{"query": "text", "threshold": 0.8, "limit": 10}`
+
+**구현된 파일**:
+- `api-server/src/main/java/com/jwyoo/api/repository/EmbeddingRepository.java` (Native Query 메서드)
+- `api-server/src/main/java/com/jwyoo/api/service/SearchService.java`
+- `api-server/src/main/java/com/jwyoo/api/controller/SearchController.java`
+- `api-server/src/main/java/com/jwyoo/api/dto/SearchRequest.java`
+- `api-server/src/main/java/com/jwyoo/api/dto/SearchResult.java`
+
+**실제 소요 시간**: 약 4시간
+
+---
+
+#### Task 105: 프론트엔드 검색 UI ✅
+**완료 날짜**: 2025-11-05
+
+**검색 페이지 구현** (`/search`):
+- [x] 검색 바 (텍스트 입력, Enter 키 지원)
+- [x] 검색 타입 선택 (캐릭터/대사/장면)
+- [x] 필터 옵션 (캐릭터, 에피소드, 장면 드롭다운)
+- [x] 검색 결과 카드 표시
+  - 캐릭터 정보 (이름, 설명, 성격)
+  - 대사 정보 (캐릭터, 내용, 위치)
+  - 장면 정보 (위치, 분위기, 참여자)
+- [x] 유사도 점수 표시 (백분율)
+- [x] 에피소드 선택 시 장면 목록 자동 로드
+
+**API 클라이언트** (`lib/search.ts`):
+- searchCharacters(query, threshold, limit)
+- searchDialogues(query, threshold, limit, characterId?, episodeId?)
+- searchScenes(query, threshold, limit, episodeId?)
+
+**구현된 파일**:
+- `frontend/src/app/search/page.tsx`
+- `frontend/src/lib/search.ts`
+
+**실제 소요 시간**: 약 3시간
+
+---
+
+### 코드 품질 개선 (2025-11-06)
+
+#### 문서 일관성 개선 ✅
+- DEVELOPMENT_ROADMAP.md의 Java 버전 문서 수정 (Java 25 → Java 21)
+
+#### 로깅 최적화 ✅
+- `frontend/src/lib/env.ts`: DEBUG 환경 변수로 조건부 로깅
+- `frontend/src/contexts/ThemeContext.tsx`: NEXT_PUBLIC_DEBUG_THEME으로 조건부 로깅
+- 프로덕션 환경에서 불필요한 로그 제거
+
+#### 데이터베이스 쿼리 최적화 ✅
+- `api-server/src/main/java/com/jwyoo/api/service/LlmClient.java`
+- N+1 쿼리 문제 해결: 개별 쿼리 → 배치 쿼리 (findByCharacterIdIn)
+- Map을 사용한 O(1) 조회로 성능 개선
+
+#### Git 설정 개선 ✅
+- `.gitignore`: test_*.py 패턴을 llm-server 디렉토리로 범위 제한
+- FastAPI 테스트 파일 커밋 가능하도록 수정
+
+#### 설정 파일 유연성 개선 ✅
+- RefreshToken 만료 시간을 환경 변수로 설정 가능하도록 수정
+  - `RefreshTokenService.java`: jwt.refresh-token-expiration 주입
+  - `Duration.ofMillis()` 사용으로 정확한 시간 계산
+- CORS 설정을 환경 변수로 설정 가능하도록 수정
+  - `CorsConfig.java`: cors.allowed-origins 주입
+  - 쉼표로 구분된 다중 오리진 지원
+  - 프로덕션 환경 HTTPS 지원
+
+**수정된 파일**:
+- `DEVELOPMENT_ROADMAP.md`
+- `frontend/src/lib/env.ts`
+- `frontend/src/contexts/ThemeContext.tsx`
+- `api-server/src/main/java/com/jwyoo/api/service/LlmClient.java`
+- `.gitignore`
+- `api-server/src/main/java/com/jwyoo/api/service/RefreshTokenService.java`
+- `api-server/src/main/java/com/jwyoo/api/config/CorsConfig.java`
+- `api-server/src/main/resources/application.properties`
+
+---
+
+**Phase 7 총 소요 시간**: 약 14시간
+
+**주요 기술**:
+- PostgreSQL pgvector 확장
+- OpenAI Embeddings API (text-embedding-ada-002)
+- JPA Event Listeners (@PostPersist, @PostUpdate, @PostRemove)
+- 코사인 유사도 검색 (Cosine Similarity)
+- Vector 연산 (<=> 연산자)
+
+**주요 성과**:
+1. 자동 임베딩 생성으로 수동 작업 제거
+2. 의미 기반 검색으로 키워드 검색보다 정확도 향상
+3. 기존 PostgreSQL 활용으로 인프라 복잡도 최소화
+4. 코드 품질 및 설정 유연성 개선
 
 ---
 
@@ -497,6 +723,217 @@
 
 **수정된 파일**:
 - `frontend/src/components/ui/Select.tsx`
+
+---
+
+## Phase 11: Multi-Database Architecture ✅
+
+**완료 날짜**: 2025-11-06
+
+### 주요 성과
+- AI Analysis 구조화 시스템 구현
+- Hybrid Search (하이브리드 검색) 구현
+- 여러 AI 모델 결과 비교 및 분석 히스토리 추적
+- **GraphDB ↔ VectorDB 크로스 링크 완성** (Multi-DB 통합)
+- Concept 엔티티 기반 고급 분석 시스템
+
+### 완료된 Task 목록
+
+#### Task 110: AI Analysis 엔티티 설계 ✅
+**완료 날짜**: 2025-11-06
+
+**AIAnalysis 엔티티 구현**:
+- [x] AIAnalysis 엔티티 생성
+  - `id`, `episodeId`, `analysisType`, `modelName`, `result` (TEXT), `confidence`, `executionTimeMs`
+  - `status` (pending, running, completed, failed)
+  - `errorMessage`, `createdAt`, `updatedAt`
+- [x] 분석 유형 정의
+  - sentiment: 감정 분석
+  - summary: 요약
+  - tone: 어조 분석
+  - character_extraction: 캐릭터 추출
+  - relationship_extraction: 관계 추출
+  - scene_extraction: 장면 추출
+  - dialogue_extraction: 대사 추출
+- [x] 인덱스 설정
+  - idx_ai_analysis_episode_id (에피소드별 조회)
+  - idx_ai_analysis_type (분석 유형별 조회)
+  - idx_ai_analysis_model (모델별 조회)
+  - idx_ai_analysis_created (시간순 정렬)
+
+**구현된 파일**:
+- `api-server/src/main/java/com/jwyoo/api/entity/AIAnalysis.java`
+- `api-server/src/main/java/com/jwyoo/api/repository/AIAnalysisRepository.java`
+- `api-server/src/main/java/com/jwyoo/api/service/AIAnalysisService.java`
+
+**실제 소요 시간**: 약 3시간
+
+**장점**:
+- 여러 AI 모델 (gpt-4, claude-3, gemini-pro) 결과 비교 가능
+- 분석 히스토리 추적 및 시계열 분석
+- 분석 타입별 필터링 및 검색
+- 성능 모니터링 (executionTimeMs)
+
+---
+
+#### Task 111: AI Analysis API 구현 ✅
+**완료 날짜**: 2025-11-06
+
+**REST API 엔드포인트 8개**:
+1. `POST /episodes/{episodeId}/analyses` - AI 분석 실행 (새로운 분석 결과 생성)
+2. `GET /episodes/{episodeId}/analyses` - 분석 목록 조회 (type, model 필터 지원)
+3. `GET /analyses/{id}` - 특정 분석 조회
+4. `DELETE /analyses/{id}` - 분석 삭제
+5. `GET /analyses/compare` - 여러 AI 모델 결과 비교
+   - 같은 에피소드, 같은 분석 유형에 대해 여러 모델의 최신 결과 반환
+6. `GET /episodes/{episodeId}/analyses/latest` - 최신 분석 결과 조회 (분석 유형별)
+7. `GET /episodes/{episodeId}/analyses/count` - 에피소드의 분석 개수 조회
+
+**AIAnalysisService 메서드**:
+- `createAnalysis(analysis)` - 분석 결과 저장
+- `getAnalysisById(id)` - 특정 분석 조회
+- `getAnalysesByEpisodeId(episodeId)` - 에피소드의 모든 분석 조회
+- `getAnalysesByEpisodeIdAndType(episodeId, type)` - 에피소드 + 타입 필터
+- `getAnalysesByEpisodeIdAndTypeAndModel(episodeId, type, model)` - 에피소드 + 타입 + 모델 필터
+- `compareModelAnalyses(episodeId, type)` - 모델별 최신 결과 비교
+- `getLatestAnalysisByEpisodeIdAndType(episodeId, type)` - 최신 분석 조회
+- `countAnalysesByEpisodeId(episodeId)` - 분석 개수
+- `deleteAnalysis(id)` - 분석 삭제
+
+**구현된 파일**:
+- `api-server/src/main/java/com/jwyoo/api/controller/AIAnalysisController.java`
+- `api-server/src/main/java/com/jwyoo/api/service/AIAnalysisService.java`
+- `api-server/src/main/java/com/jwyoo/api/dto/AIAnalysisRequest.java`
+- `api-server/src/main/java/com/jwyoo/api/dto/AIAnalysisResponse.java`
+
+**실제 소요 시간**: 약 2시간
+
+---
+
+#### Task 117: Hybrid Search 구현 ✅
+**완료 날짜**: 2025-11-06
+
+**하이브리드 검색 시스템**:
+- [x] 텍스트 검색 (PostgreSQL LIKE 쿼리)
+- [x] 의미 검색 (VectorDB Cosine Similarity)
+- [x] 하이브리드 검색 (텍스트 + 벡터 결합)
+- [x] POST /search/hybrid 엔드포인트 구현
+
+**검색 플로우**:
+```
+User Query
+  ├─> VectorDB (의미 유사도) - 코사인 유사도 기반
+  ├─> PostgreSQL (키워드 매치) - LIKE 쿼리
+  └─> Result Merger → Ranked Results (중복 제거)
+```
+
+**RagVectorService.hybridSearch()**:
+- 의미 검색: `semanticSearchByQuery(query, threshold, limit)`
+- 키워드 검색: `findByTextChunkContaining(keyword)`
+- 결과 병합: 중복 제거 및 순위 결합
+- 최종 결과: 의미 유사도 순으로 정렬
+
+**SearchController API**:
+- POST /search/semantic - 순수 의미 검색
+- POST /search/semantic/by-type - 타입별 의미 검색
+- POST /search/hybrid - 하이브리드 검색 (텍스트 + 의미)
+
+**구현된 파일**:
+- `api-server/src/main/java/com/jwyoo/api/controller/SearchController.java`
+- `api-server/src/main/java/com/jwyoo/api/service/RagVectorService.java`
+- `api-server/src/main/java/com/jwyoo/api/repository/RagVectorRepository.java`
+
+**실제 소요 시간**: 약 4시간
+
+**주요 기능**:
+- 의미 기반 검색으로 동의어/유사 표현 검색 가능
+- 키워드 매치로 정확한 텍스트 검색 보완
+- 두 가지 검색 방식 결합으로 검색 정확도 향상
+
+---
+
+#### Task 116: GraphDB ↔ VectorDB 크로스 링크 ✅
+**완료 날짜**: 2025-11-06
+
+**목표**: Neo4j 그래프와 pgvector를 연결하여 고급 분석 기능 제공
+
+**구현 내용**:
+- [x] **Concept 엔티티 설계 및 구현**
+  - `id`, `name`, `type` (theme, emotion, event, setting, trait)
+  - `description`, `projectId`, `episodeId`, `importance`, `source`
+  - 테마, 감정, 사건, 배경, 특성 등 추상적 개념 관리
+  - JPA Event Listener를 통한 자동 동기화
+
+- [x] **ConceptNode (Neo4j) 구현**
+  - Neo4j 노드 정의 및 관계 매핑
+  - RELATES_TO 관계 (relationType, similarity)
+  - Episode - CONTAINS → Concept 관계
+  - Character - RELATES_TO → Concept 관계
+
+- [x] **ConceptSyncEventListener 구현**
+  - @PostPersist: Concept 생성 시 Neo4j 동기화 + 임베딩 생성
+  - @PostUpdate: Concept 수정 시 Neo4j 업데이트 + 임베딩 재생성
+  - @PostRemove: Concept 삭제 시 Neo4j 및 임베딩 삭제
+  - RagVectorService를 통한 자동 임베딩 생성
+
+- [x] **Concept REST API 구현** (7개 엔드포인트)
+  1. `POST /concepts` - 개념 생성
+  2. `GET /concepts?projectId={id}&type={type}` - 개념 목록 조회
+  3. `GET /concepts/{id}` - 개념 조회
+  4. `PUT /concepts/{id}` - 개념 업데이트
+  5. `DELETE /concepts/{id}` - 개념 삭제
+  6. `GET /concepts/{id}/similar` - 유사한 개념 찾기 (GraphDB)
+  7. `POST /concepts/search` - 개념 의미 검색 (VectorDB)
+  8. `POST /concepts/hybrid-search` - 하이브리드 검색 (GraphDB + VectorDB)
+  9. `GET /concepts/top?projectId={id}` - 중요도 기반 개념 랭킹
+
+- [x] **Neo4j Cypher 쿼리 구현**
+  - `findSimilarConcepts()` - 유사한 개념 찾기 (RELATES_TO 관계)
+  - `findByEpisodeId()` - 에피소드별 개념 조회
+  - `findTopConceptsByImportance()` - 중요도 기반 정렬
+
+- [x] **하이브리드 검색 구현**
+  - GraphDB에서 관계된 개념 찾기 (RELATES_TO)
+  - VectorDB에서 의미적으로 유사한 개념 찾기 (Cosine Similarity)
+  - 두 결과를 병합하여 추천
+
+**구현된 파일**:
+- `api-server/src/main/java/com/jwyoo/api/entity/Concept.java`
+- `api-server/src/main/java/com/jwyoo/api/repository/ConceptRepository.java`
+- `api-server/src/main/java/com/jwyoo/api/service/ConceptService.java`
+- `api-server/src/main/java/com/jwyoo/api/graph/node/ConceptNode.java`
+- `api-server/src/main/java/com/jwyoo/api/graph/repository/ConceptNodeRepository.java`
+- `api-server/src/main/java/com/jwyoo/api/graph/service/ConceptSyncService.java`
+- `api-server/src/main/java/com/jwyoo/api/event/ConceptSyncEventListener.java`
+- `api-server/src/main/java/com/jwyoo/api/controller/ConceptController.java`
+- `api-server/src/main/java/com/jwyoo/api/dto/ConceptRequest.java`
+- `api-server/src/main/java/com/jwyoo/api/dto/ConceptResponse.java`
+
+**실제 소요 시간**: 약 3시간
+
+**주요 기능**:
+- "사랑"이라는 개념과 관련된 에피소드/캐릭터를 그래프로 탐색
+- "배신"과 의미적으로 유사한 개념들을 벡터 검색으로 찾기
+- 테마, 감정, 사건 등을 추상적 개념으로 관리하여 고급 분석 가능
+- Multi-DB 통합 완성 (RDB ↔ Neo4j ↔ VectorDB)
+
+**효과**:
+- PostgreSQL, Neo4j, pgvector 3개 데이터베이스가 완전히 연동
+- 구조적 관계(GraphDB) + 의미적 유사도(VectorDB) 결합
+- AI 분석 결과를 활용한 자동 개념 추출 가능
+
+---
+
+**Phase 11 완료율**: ✅ 100% (모든 작업 완료)
+
+**완료된 작업**:
+- ✅ Task 110-111 (Phase 11.1): AI Analysis Storage 개선
+- ✅ Task 112-114 (Phase 11.2): RAG Vector 시스템 (Phase 7에서 완료)
+- ✅ Task 115 (Phase 11.3): RDB → GraphDB ETL 파이프라인 (Phase 9에서 완료)
+- ✅ Task 117 (Phase 11.4): Hybrid Search 구현
+- ✅ Task 116 (Phase 11.5): GraphDB ↔ VectorDB 크로스 링크 완료
+
+**Phase 11 총 소요 시간**: 약 12시간
 
 ---
 
