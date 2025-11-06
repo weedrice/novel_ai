@@ -118,7 +118,17 @@ export const logout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
-  window.location.href = '/login';
+
+  // 현재 페이지가 인증이 필요한 페이지인지 확인
+  const currentPath = window.location.pathname;
+  const publicPaths = ['/', '/login', '/signup', '/graph'];
+
+  // 현재 페이지가 public 페이지면 새로고침, 아니면 홈으로 이동
+  if (publicPaths.includes(currentPath)) {
+    window.location.reload();
+  } else {
+    window.location.href = '/';
+  }
 };
 
 /**
