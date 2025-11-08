@@ -21,16 +21,26 @@ export default function ProjectDetailPage() {
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   // 에디터 상태
   const [editorContent, setEditorContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null)
 
+  // 제목 편집 상태
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editedTitle, setEditedTitle] = useState('')
+
   // 새 에피소드 생성 모달
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newEpisodeTitle, setNewEpisodeTitle] = useState('')
   const [creating, setCreating] = useState(false)
+
+  // 분석 상태
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analysisResult, setAnalysisResult] = useState<any>(null)
+  const [analysisType, setAnalysisType] = useState<string | null>(null)
 
   useEffect(() => {
     loadProjectAndEpisodes()
@@ -62,6 +72,8 @@ export default function ProjectDetailPage() {
   const handleEpisodeSelect = (episode: Episode) => {
     setSelectedEpisode(episode)
     setEditorContent(episode.scriptText || '')
+    setEditedTitle(episode.title)
+    setIsEditingTitle(false)
   }
 
   const handleCreateEpisode = async () => {
@@ -112,13 +124,13 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const handleSaveEpisode = useCallback(async () => {
+  const handleSaveEpisode = useCallback(async (saveTitle = false) => {
     if (!selectedEpisode) return
 
     setIsSaving(true)
     try {
       const updated = await updateEpisode(selectedEpisode.id, {
-        title: selectedEpisode.title,
+        title: saveTitle ? editedTitle : selectedEpisode.title,
         episodeOrder: selectedEpisode.episodeOrder,
         scriptText: editorContent,
       })
@@ -129,17 +141,26 @@ export default function ProjectDetailPage() {
       setEpisodes(updatedEpisodes)
       setSelectedEpisode(updated)
       setError(null)
+
+      if (saveTitle) {
+        setIsEditingTitle(false)
+      }
     } catch (err: any) {
       console.error('에피소드 저장 실패:', err)
       setError(err.response?.data?.error || '에피소드 저장에 실패했습니다.')
     } finally {
       setIsSaving(false)
     }
-  }, [selectedEpisode, editorContent, episodes])
+  }, [selectedEpisode, editorContent, editedTitle, episodes])
 
-  // 자동 저장 (내용 변경 후 5초 후)
+  // 자동 저장 (내용 변경 후 3초 후, 무입력 시에만)
   useEffect(() => {
-    if (!selectedEpisode || editorContent === (selectedEpisode.scriptText || '')) {
+    if (!selectedEpisode) {
+      return
+    }
+
+    // 내용이 변경되지 않았으면 저장하지 않음
+    if (editorContent === (selectedEpisode.scriptText || '')) {
       return
     }
 
@@ -149,16 +170,47 @@ export default function ProjectDetailPage() {
 
     const timeout = setTimeout(() => {
       handleSaveEpisode()
-    }, 5000)
+    }, 3000) // 5초 → 3초로 단축
 
     setSaveTimeout(timeout)
 
     return () => {
-      if (saveTimeout) {
-        clearTimeout(saveTimeout)
+      if (timeout) {
+        clearTimeout(timeout)
       }
     }
-  }, [editorContent])
+  }, [editorContent, selectedEpisode, handleSaveEpisode])
+
+  // 분석 함수들
+  const handleAnalysis = async (type: 'summary' | 'characters' | 'scenes' | 'dialogues' | 'spell-check') => {
+    if (!selectedEpisode) return
+
+    setAnalyzing(true)
+    setAnalysisType(type)
+    setError(null)
+
+    try {
+      const response = await apiClient.post(`/episodes/${selectedEpisode.id}/analysis/${type}`)
+      setAnalysisResult(response.data)
+      setSuccess(`${getAnalysisTypeName(type)}이 완료되었습니다.`)
+    } catch (err: any) {
+      console.error(`Failed to analyze ${type}:`, err)
+      setError(err.response?.data?.error || `${getAnalysisTypeName(type)}에 실패했습니다.`)
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  const getAnalysisTypeName = (type: string) => {
+    switch (type) {
+      case 'summary': return 'AI 요약 생성'
+      case 'characters': return '캐릭터 분석'
+      case 'scenes': return '장면 추출'
+      case 'dialogues': return '대사 분석'
+      case 'spell-check': return '맞춤법 검사'
+      default: return '분석'
+    }
+  }
 
   if (loading) {
     return (
@@ -209,7 +261,7 @@ export default function ProjectDetailPage() {
       {/* Main Content */}
       <div className="flex h-[calc(100vh-140px)]">
         {/* 좌측: 에피소드 리스트 */}
-        <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
+        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto flex-shrink-0">
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -231,6 +283,12 @@ export default function ProjectDetailPage() {
                 message={error}
                 onDismiss={() => setError(null)}
               />
+            )}
+
+            {success && (
+              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-300">{success}</p>
+              </div>
             )}
 
             {episodes.length === 0 ? (
@@ -270,31 +328,83 @@ export default function ProjectDetailPage() {
           </div>
         </div>
 
-        {/* 우측: 에디터 */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-gray-800">
+        {/* 중앙: 에디터 */}
+        <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 min-w-0">
+
           {selectedEpisode ? (
             <>
               {/* 에디터 헤더 */}
               <div className="border-b border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      {selectedEpisode.title}
-                    </h3>
+                  <div className="flex items-center gap-3 flex-1">
+                    {isEditingTitle ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          type="text"
+                          value={editedTitle}
+                          onChange={(e) => setEditedTitle(e.target.value)}
+                          className="flex-1 px-3 py-1.5 text-xl font-semibold border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveEpisode(true)
+                            } else if (e.key === 'Escape') {
+                              setEditedTitle(selectedEpisode.title)
+                              setIsEditingTitle(false)
+                            }
+                          }}
+                        />
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleSaveEpisode(true)}
+                          disabled={isSaving || !editedTitle.trim()}
+                        >
+                          저장
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setEditedTitle(selectedEpisode.title)
+                            setIsEditingTitle(false)
+                          }}
+                        >
+                          취소
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                          {selectedEpisode.title}
+                        </h3>
+                        <button
+                          onClick={() => setIsEditingTitle(true)}
+                          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                          title="제목 편집"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
                     {isSaving && (
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         저장 중...
                       </span>
                     )}
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleDeleteEpisode}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    삭제
-                  </Button>
+                  {!isEditingTitle && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleDeleteEpisode}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      삭제
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -317,6 +427,133 @@ export default function ProjectDetailPage() {
             </div>
           )}
         </div>
+
+        {/* 우측: 애드온 영역 */}
+        {selectedEpisode && (
+          <div className="w-80 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 overflow-y-auto flex-shrink-0">
+            <div className="p-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                도구
+              </h3>
+
+              <div className="space-y-4">
+                {/* 통계 카드 */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    문서 통계
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">글자 수</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {editorContent.length.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">줄 수</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {editorContent.split('\n').length.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">단어 수</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {editorContent.trim() ? editorContent.trim().split(/\s+/).length.toLocaleString() : 0}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 빠른 액션 */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    빠른 액션
+                  </h4>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => handleAnalysis('summary')}
+                      disabled={analyzing || !editorContent.trim()}
+                      className="w-full px-3 py-2 text-left text-sm bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {analyzing && analysisType === 'summary' ? '⏳' : '📝'} AI 요약 생성
+                    </button>
+                    <button
+                      onClick={() => handleAnalysis('characters')}
+                      disabled={analyzing || !editorContent.trim()}
+                      className="w-full px-3 py-2 text-left text-sm bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {analyzing && analysisType === 'characters' ? '⏳' : '🔍'} 캐릭터 분석
+                    </button>
+                    <button
+                      onClick={() => handleAnalysis('scenes')}
+                      disabled={analyzing || !editorContent.trim()}
+                      className="w-full px-3 py-2 text-left text-sm bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {analyzing && analysisType === 'scenes' ? '⏳' : '🎬'} 장면 추출
+                    </button>
+                    <button
+                      onClick={() => handleAnalysis('dialogues')}
+                      disabled={analyzing || !editorContent.trim()}
+                      className="w-full px-3 py-2 text-left text-sm bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {analyzing && analysisType === 'dialogues' ? '⏳' : '💬'} 대사 분석
+                    </button>
+                    <button
+                      onClick={() => handleAnalysis('spell-check')}
+                      disabled={analyzing || !editorContent.trim()}
+                      className="w-full px-3 py-2 text-left text-sm bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {analyzing && analysisType === 'spell-check' ? '⏳' : '✏️'} 맞춤법 검사
+                    </button>
+                  </div>
+                </div>
+
+                {/* 분석 결과 */}
+                {analysisResult && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {getAnalysisTypeName(analysisType || '')} 결과
+                      </h4>
+                      <button
+                        onClick={() => {
+                          setAnalysisResult(null)
+                          setAnalysisType(null)
+                          setSuccess(null)
+                        }}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto text-xs">
+                      <pre className="whitespace-pre-wrap text-gray-600 dark:text-gray-400">
+                        {JSON.stringify(analysisResult, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {/* 메타데이터 */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    정보
+                  </h4>
+                  <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
+                    <div>
+                      <div className="font-medium mb-1">생성일</div>
+                      <div>{selectedEpisode.createdAt ? new Date(selectedEpisode.createdAt).toLocaleString('ko-KR') : '-'}</div>
+                    </div>
+                    <div>
+                      <div className="font-medium mb-1">수정일</div>
+                      <div>{selectedEpisode.updatedAt ? new Date(selectedEpisode.updatedAt).toLocaleString('ko-KR') : '-'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 새 에피소드 생성 모달 */}
