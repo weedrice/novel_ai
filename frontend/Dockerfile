@@ -1,10 +1,11 @@
-FROM node:20.11.1-alpine
+FROM node:20.11.1-slim
 
 WORKDIR /app
 
-# Set UTF-8 encoding
+# Set UTF-8 encoding and Node options
 ENV LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
+    LC_ALL=C.UTF-8 \
+    NODE_OPTIONS="--max-old-space-size=2048"
 
 # Copy package files
 COPY package.json package-lock.json* ./
