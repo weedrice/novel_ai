@@ -49,6 +49,7 @@ public class UserService {
         // 사용자 생성
         User user = User.builder()
                 .username(request.getUsername())
+                .name(request.getName())
                 .email(request.getEmail())
                 .password(encodedPassword)
                 .role(User.UserRole.USER)
@@ -71,5 +72,57 @@ public class UserService {
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + username));
+    }
+
+    /**
+     * 사용자 정보 수정
+     *
+     * @param username 사용자명
+     * @param request 수정 요청 (이름, 이메일)
+     * @return 수정된 사용자
+     * @throws RuntimeException 이메일이 이미 존재하는 경우
+     */
+    @Transactional
+    public User updateUser(String username, com.jwyoo.api.controller.UserController.UpdateUserRequest request) {
+        log.info("Updating user: {}", username);
+
+        User user = findByUsername(username);
+
+        // 이메일 변경 시 중복 체크
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                log.warn("Email already exists: {}", request.getEmail());
+                throw new RuntimeException("이메일이 이미 존재합니다: " + request.getEmail());
+            }
+            user.setEmail(request.getEmail());
+        }
+
+        // 이름 수정
+        if (request.getName() != null) {
+            user.setName(request.getName());
+        }
+
+        User updatedUser = userRepository.save(user);
+        log.info("User updated successfully: {}", updatedUser.getUsername());
+
+        return updatedUser;
+    }
+
+    /**
+     * 비밀번호 변경
+     *
+     * @param username 사용자명
+     * @param newPassword 새 비밀번호
+     */
+    @Transactional
+    public void changePassword(String username, String newPassword) {
+        log.info("Changing password for user: {}", username);
+
+        User user = findByUsername(username);
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(encodedPassword);
+
+        userRepository.save(user);
+        log.info("Password changed successfully for user: {}", username);
     }
 }
