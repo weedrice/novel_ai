@@ -118,22 +118,8 @@ JOIN characters c ON c.character_id = 'char.jiho'
 WHERE e.title = 'ep3 - 화해' AND s.scene_number = 1;
 
 -- 7. 관계 데이터
-INSERT INTO relationships (from_character_id, to_character_id, relation_type, closeness, description, created_at, updated_at)
-SELECT c1.id, c2.id, 'friend', 8.5, '절친한 친구 사이', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-FROM characters c1, characters c2
-WHERE c1.character_id = 'char.seha' AND c2.character_id = 'char.jiho'
-UNION ALL
-SELECT c1.id, c2.id, 'friend', 8.5, '절친한 친구 사이', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-FROM characters c1, characters c2
-WHERE c1.character_id = 'char.jiho' AND c2.character_id = 'char.seha'
-UNION ALL
-SELECT c1.id, c2.id, 'friend', 6.0, '밝은 후배', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-FROM characters c1, characters c2
-WHERE c1.character_id = 'char.seha' AND c2.character_id = 'char.mina'
-UNION ALL
-SELECT c1.id, c2.id, 'friend', 7.0, '좋아하는 선배', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-FROM characters c1, characters c2
-WHERE c1.character_id = 'char.mina' AND c2.character_id = 'char.seha';
+-- CharacterRelationship는 Neo4j Graph DB에서 관리됨
+-- PostgreSQL에는 relationships 테이블이 없으므로 주석 처리
 
 -- 데모 계정 정보:
 -- Username: demo
