@@ -34,31 +34,22 @@ public class LlmAnalysisService {
     public Map<String, Object> generateSummary(String text) {
         log.info("Generating AI summary for text (length: {})", text.length());
 
-        String prompt = String.format("""
-            다음 텍스트를 간단하고 명확하게 요약해주세요.
+        String url = llmServerUrl + "/gen/episode/summary";
 
-            텍스트:
-            %s
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-            요약 조건:
-            1. 핵심 내용을 3-5문장으로 요약
-            2. 주요 사건이나 갈등을 포함
-            3. 감정적 톤이나 분위기 언급
-            4. 간단명료하게 작성
+        Map<String, Object> requestBody = Map.of(
+                "scriptText", text,
+                "scriptFormat", "novel",
+                "provider", "openai"
+        );
 
-            JSON 형식으로 응답:
-            {
-                "summary": "요약 내용",
-                "keyPoints": ["핵심 포인트1", "핵심 포인트2", ...],
-                "mood": "전반적인 분위기",
-                "wordCount": 원문_단어수,
-                "summaryRatio": "요약비율(퍼센트)"
-            }
-            """, text);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
-            Map<String, Object> response = callLlmServer(prompt, "gpt-4");
-            return processLlmResponse(response);
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            return response.getBody();
         } catch (Exception e) {
             log.error("Failed to generate summary: {}", e.getMessage());
             return createFallbackSummary(text);
@@ -71,44 +62,22 @@ public class LlmAnalysisService {
     public Map<String, Object> analyzeCharacters(String text) {
         log.info("Analyzing characters for text (length: {})", text.length());
 
-        String prompt = String.format("""
-            다음 텍스트에서 등장하는 캐릭터들을 분석해주세요.
+        String url = llmServerUrl + "/gen/episode/characters";
 
-            텍스트:
-            %s
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-            분석 항목:
-            1. 등장하는 캐릭터 이름
-            2. 각 캐릭터의 성격 특징
-            3. 말투나 특징적 표현
-            4. 관계성 분석
-            5. 등장 빈도
+        Map<String, Object> requestBody = Map.of(
+                "scriptText", text,
+                "scriptFormat", "novel",
+                "provider", "openai"
+        );
 
-            JSON 형식으로 응답:
-            {
-                "characters": [
-                    {
-                        "name": "캐릭터 이름",
-                        "personality": "성격 특징",
-                        "speechStyle": "말투 특징",
-                        "frequency": 등장빈도(1-10),
-                        "role": "주인공/조연/기타"
-                    }
-                ],
-                "relationships": [
-                    {
-                        "character1": "캐릭터1",
-                        "character2": "캐릭터2",
-                        "relationship": "관계 설명"
-                    }
-                ],
-                "totalCharacters": 총_캐릭터수
-            }
-            """, text);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
-            Map<String, Object> response = callLlmServer(prompt, "gpt-4");
-            return processLlmResponse(response);
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            return response.getBody();
         } catch (Exception e) {
             log.error("Failed to analyze characters: {}", e.getMessage());
             return createFallbackCharacterAnalysis(text);
@@ -121,39 +90,22 @@ public class LlmAnalysisService {
     public Map<String, Object> extractScenes(String text) {
         log.info("Extracting scenes for text (length: {})", text.length());
 
-        String prompt = String.format("""
-            다음 텍스트에서 장면들을 추출하고 분석해주세요.
+        String url = llmServerUrl + "/gen/episode/scenes";
 
-            텍스트:
-            %s
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-            분석 항목:
-            1. 주요 장면 구분
-            2. 각 장면의 배경/위치
-            3. 등장 인물
-            4. 핵심 사건
-            5. 감정적 톤
+        Map<String, Object> requestBody = Map.of(
+                "scriptText", text,
+                "scriptFormat", "novel",
+                "provider", "openai"
+        );
 
-            JSON 형식으로 응답:
-            {
-                "scenes": [
-                    {
-                        "sceneNumber": 번호,
-                        "location": "장소/배경",
-                        "characters": ["등장인물1", "등장인물2"],
-                        "summary": "장면 요약",
-                        "mood": "분위기",
-                        "keyEvent": "핵심 사건"
-                    }
-                ],
-                "totalScenes": 총_장면수,
-                "mainLocation": "주요 배경"
-            }
-            """, text);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
-            Map<String, Object> response = callLlmServer(prompt, "gpt-4");
-            return processLlmResponse(response);
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            return response.getBody();
         } catch (Exception e) {
             log.error("Failed to extract scenes: {}", e.getMessage());
             return createFallbackSceneAnalysis(text);
@@ -166,38 +118,22 @@ public class LlmAnalysisService {
     public Map<String, Object> analyzeDialogues(String text) {
         log.info("Analyzing dialogues for text (length: {})", text.length());
 
-        String prompt = String.format("""
-            다음 텍스트에서 대사들을 추출하고 분석해주세요.
+        String url = llmServerUrl + "/gen/episode/dialogues";
 
-            텍스트:
-            %s
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-            분석 항목:
-            1. 직접 대화 추출
-            2. 화자 구분
-            3. 대화의 톤/감정
-            4. 중요한 대화 식별
-            5. 대화 비율 분석
+        Map<String, Object> requestBody = Map.of(
+                "scriptText", text,
+                "scriptFormat", "novel",
+                "provider", "openai"
+        );
 
-            JSON 형식으로 응답:
-            {
-                "dialogues": [
-                    {
-                        "speaker": "화자",
-                        "text": "대사 내용",
-                        "emotion": "감정/톤",
-                        "importance": "중요도(1-10)"
-                    }
-                ],
-                "dialogueRatio": "전체_텍스트_대비_대화_비율",
-                "mainSpeakers": ["주요화자1", "주요화자2"],
-                "totalDialogues": 총_대화수
-            }
-            """, text);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
-            Map<String, Object> response = callLlmServer(prompt, "gpt-4");
-            return processLlmResponse(response);
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            return response.getBody();
         } catch (Exception e) {
             log.error("Failed to analyze dialogues: {}", e.getMessage());
             return createFallbackDialogueAnalysis(text);
@@ -210,58 +146,15 @@ public class LlmAnalysisService {
     public Map<String, Object> checkSpelling(String text) {
         log.info("Checking spelling for text (length: {})", text.length());
 
-        String prompt = String.format("""
-            다음 텍스트의 맞춤법과 문법을 검사해주세요.
-
-            텍스트:
-            %s
-
-            검사 항목:
-            1. 맞춤법 오류
-            2. 문법 오류
-            3. 띄어쓰기 오류
-            4. 올바른 표현 제안
-
-            JSON 형식으로 응답:
-            {
-                "errors": [
-                    {
-                        "type": "오류타입(spelling/grammar/spacing)",
-                        "original": "원래 텍스트",
-                        "suggestion": "수정 제안",
-                        "position": "위치",
-                        "reason": "오류 이유"
-                    }
-                ],
-                "totalErrors": 총_오류수,
-                "accuracy": "정확도_퍼센트",
-                "correctedText": "수정된_전체_텍스트"
-            }
-            """, text);
-
-        try {
-            Map<String, Object> response = callLlmServer(prompt, "gpt-4");
-            return processLlmResponse(response);
-        } catch (Exception e) {
-            log.error("Failed to check spelling: {}", e.getMessage());
-            return createFallbackSpellCheck(text);
-        }
-    }
-
-    /**
-     * LLM 서버 호출
-     */
-    private Map<String, Object> callLlmServer(String prompt, String provider) {
-        String url = llmServerUrl + "/gen/text";
+        String url = llmServerUrl + "/gen/episode/spell-check";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> requestBody = Map.of(
-                "prompt", prompt,
-                "provider", provider,
-                "max_tokens", 2000,
-                "temperature", 0.7
+                "scriptText", text,
+                "scriptFormat", "novel",
+                "provider", "openai"
         );
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
@@ -270,32 +163,13 @@ public class LlmAnalysisService {
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
             return response.getBody();
         } catch (Exception e) {
-            log.error("Failed to call LLM server: {}", e.getMessage());
-            throw new RuntimeException("LLM 서버 호출 실패: " + e.getMessage());
+            log.error("Failed to check spelling: {}", e.getMessage());
+            return createFallbackSpellCheck(text);
         }
     }
 
     /**
-     * LLM 응답 처리
-     */
-    private Map<String, Object> processLlmResponse(Map<String, Object> response) {
-        if (response == null || !response.containsKey("generated_text")) {
-            throw new RuntimeException("Invalid LLM response");
-        }
-
-        String generatedText = (String) response.get("generated_text");
-
-        // JSON 추출 시도
-        try {
-            return extractJsonFromText(generatedText);
-        } catch (Exception e) {
-            log.warn("Failed to parse JSON from LLM response, using fallback");
-            return Map.of("result", generatedText, "rawResponse", true);
-        }
-    }
-
-    /**
-     * 텍스트에서 JSON 추출
+     * 텍스트에서 JSON 추출 (필요시 사용)
      */
     private Map<String, Object> extractJsonFromText(String text) throws JsonProcessingException {
         // JSON 코드 블록 패턴 매칭

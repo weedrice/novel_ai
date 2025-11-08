@@ -589,6 +589,428 @@ def _generate_empty_analysis() -> ScriptAnalysisResponse:
 
 
 # ============================================================
+# Episode Analysis Endpoints
+# ============================================================
+
+class EpisodeAnalysisInput(BaseModel):
+    scriptText: str = Field(..., description="Episode script text")
+    scriptFormat: Optional[str] = Field(None, description="Format: novel, scenario, description, dialogue")
+    provider: str = Field("openai", description="LLM provider")
+
+
+class SummaryResponse(BaseModel):
+    summary: str
+    keyPoints: List[str] = []
+    wordCount: int = 0
+
+
+@app.post("/gen/episode/summary", response_model=SummaryResponse)
+async def generate_summary(inp: EpisodeAnalysisInput) -> SummaryResponse:
+    """Generate AI summary of the episode script."""
+    logger.info(f"Generating summary: length={len(inp.scriptText)} chars, provider={inp.provider}")
+
+    try:
+        system_prompt = """
+당신은 전문 작가이자 편집자입니다. 제공된 스크립트를 분석하여 간결하고 명확한 요약을 작성하세요.
+
+요약 시 다음을 포함하세요:
+1. 전체적인 줄거리 (2-3문장)
+2. 주요 사건 및 전개
+3. 핵심 주제나 메시지
+
+JSON 형식으로 응답하세요:
+{
+  "summary": "전체 요약 (150-300자)",
+  "keyPoints": ["핵심 포인트 1", "핵심 포인트 2", "핵심 포인트 3"],
+  "wordCount": 글자수
+}
+"""
+
+        format_hint = f"형식: {inp.scriptFormat}" if inp.scriptFormat else ""
+        user_prompt = f"""
+{format_hint}
+다음 스크립트를 요약해주세요:
+
+{inp.scriptText}
+
+JSON 형식으로만 응답하세요.
+"""
+
+        generated = llm_service.generate_dialogue(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=1000,
+            temperature=0.3,
+            n_candidates=1,
+            provider=inp.provider,
+        )
+
+        if not generated or not generated[0]:
+            return SummaryResponse(
+                summary="요약을 생성할 수 없습니다.",
+                keyPoints=[],
+                wordCount=len(inp.scriptText)
+            )
+
+        response_text = generated[0].strip()
+
+        # Extract JSON from markdown code blocks
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+
+        data = json.loads(response_text)
+
+        return SummaryResponse(
+            summary=data.get("summary", ""),
+            keyPoints=data.get("keyPoints", []),
+            wordCount=data.get("wordCount", len(inp.scriptText))
+        )
+
+    except Exception as e:
+        logger.error(f"Error generating summary: {e}")
+        return SummaryResponse(
+            summary=f"요약 생성 중 오류가 발생했습니다: {str(e)}",
+            keyPoints=[],
+            wordCount=len(inp.scriptText)
+        )
+
+
+class CharacterAnalysisResponse(BaseModel):
+    characters: List[ExtractedCharacter]
+
+
+@app.post("/gen/episode/characters", response_model=CharacterAnalysisResponse)
+async def analyze_characters(inp: EpisodeAnalysisInput) -> CharacterAnalysisResponse:
+    """Extract and analyze characters from the episode script."""
+    logger.info(f"Analyzing characters: length={len(inp.scriptText)} chars, provider={inp.provider}")
+
+    try:
+        system_prompt = """
+당신은 캐릭터 분석 전문가입니다. 스크립트에서 등장하는 모든 캐릭터를 추출하고 분석하세요.
+
+각 캐릭터에 대해:
+1. 이름
+2. 외모나 배경 설명
+3. 성격 특성
+4. 말투/화법 특징
+5. 대사 예시 (실제 대사에서 추출)
+
+JSON 형식으로 응답하세요:
+{
+  "characters": [
+    {
+      "name": "캐릭터 이름",
+      "description": "간단한 설명",
+      "personality": "성격 특성",
+      "speakingStyle": "말투 특징",
+      "dialogueExamples": ["대사 예시 1", "대사 예시 2"]
+    }
+  ]
+}
+"""
+
+        format_hint = f"형식: {inp.scriptFormat}" if inp.scriptFormat else ""
+        user_prompt = f"""
+{format_hint}
+다음 스크립트에서 캐릭터를 추출하고 분석해주세요:
+
+{inp.scriptText}
+
+JSON 형식으로만 응답하세요.
+"""
+
+        generated = llm_service.generate_dialogue(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=1500,
+            temperature=0.3,
+            n_candidates=1,
+            provider=inp.provider,
+        )
+
+        if not generated or not generated[0]:
+            return CharacterAnalysisResponse(characters=[])
+
+        response_text = generated[0].strip()
+
+        # Extract JSON from markdown code blocks
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+
+        data = json.loads(response_text)
+        characters = [ExtractedCharacter(**c) for c in data.get("characters", [])]
+
+        logger.info(f"Extracted {len(characters)} characters")
+        return CharacterAnalysisResponse(characters=characters)
+
+    except Exception as e:
+        logger.error(f"Error analyzing characters: {e}")
+        return CharacterAnalysisResponse(characters=[])
+
+
+class SceneAnalysisResponse(BaseModel):
+    scenes: List[ExtractedScene]
+
+
+@app.post("/gen/episode/scenes", response_model=SceneAnalysisResponse)
+async def analyze_scenes(inp: EpisodeAnalysisInput) -> SceneAnalysisResponse:
+    """Extract scenes from the episode script."""
+    logger.info(f"Analyzing scenes: length={len(inp.scriptText)} chars, provider={inp.provider}")
+
+    try:
+        system_prompt = """
+당신은 장면 분석 전문가입니다. 스크립트를 장면 단위로 나누고 각 장면을 분석하세요.
+
+각 장면에 대해:
+1. 장면 번호 (1부터 시작)
+2. 장소/배경
+3. 분위기
+4. 장면 설명
+5. 참여 캐릭터들
+
+장면 구분 기준:
+- 시간이나 장소가 바뀔 때
+- 등장인물이 크게 바뀔 때
+- 주요 사건이 발생할 때
+
+JSON 형식으로 응답하세요:
+{
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "location": "장소",
+      "mood": "분위기",
+      "description": "장면 설명",
+      "participants": ["캐릭터1", "캐릭터2"]
+    }
+  ]
+}
+"""
+
+        format_hint = f"형식: {inp.scriptFormat}" if inp.scriptFormat else ""
+        user_prompt = f"""
+{format_hint}
+다음 스크립트를 장면 단위로 분석해주세요:
+
+{inp.scriptText}
+
+JSON 형식으로만 응답하세요.
+"""
+
+        generated = llm_service.generate_dialogue(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=1500,
+            temperature=0.3,
+            n_candidates=1,
+            provider=inp.provider,
+        )
+
+        if not generated or not generated[0]:
+            return SceneAnalysisResponse(scenes=[])
+
+        response_text = generated[0].strip()
+
+        # Extract JSON from markdown code blocks
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+
+        data = json.loads(response_text)
+        scenes = [ExtractedScene(**s) for s in data.get("scenes", [])]
+
+        logger.info(f"Extracted {len(scenes)} scenes")
+        return SceneAnalysisResponse(scenes=scenes)
+
+    except Exception as e:
+        logger.error(f"Error analyzing scenes: {e}")
+        return SceneAnalysisResponse(scenes=[])
+
+
+class DialogueAnalysisResponse(BaseModel):
+    dialogues: List[ExtractedDialogue]
+    statistics: dict = {}
+
+
+@app.post("/gen/episode/dialogues", response_model=DialogueAnalysisResponse)
+async def analyze_dialogues(inp: EpisodeAnalysisInput) -> DialogueAnalysisResponse:
+    """Extract and analyze dialogues from the episode script."""
+    logger.info(f"Analyzing dialogues: length={len(inp.scriptText)} chars, provider={inp.provider}")
+
+    try:
+        system_prompt = """
+당신은 대사 분석 전문가입니다. 스크립트에서 모든 대사를 추출하고 분석하세요.
+
+각 대사에 대해:
+1. 화자 이름
+2. 대사 내용
+3. 장면 번호 (추정)
+
+추가로 대사 통계도 제공하세요:
+- 총 대사 수
+- 캐릭터별 대사 수
+- 평균 대사 길이
+
+JSON 형식으로 응답하세요:
+{
+  "dialogues": [
+    {
+      "characterName": "화자 이름",
+      "text": "대사 내용",
+      "sceneNumber": 1
+    }
+  ],
+  "statistics": {
+    "totalCount": 10,
+    "byCharacter": {"캐릭터1": 5, "캐릭터2": 5},
+    "averageLength": 30
+  }
+}
+"""
+
+        format_hint = f"형식: {inp.scriptFormat}" if inp.scriptFormat else ""
+        user_prompt = f"""
+{format_hint}
+다음 스크립트에서 대사를 추출하고 분석해주세요:
+
+{inp.scriptText}
+
+JSON 형식으로만 응답하세요.
+"""
+
+        generated = llm_service.generate_dialogue(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=2000,
+            temperature=0.3,
+            n_candidates=1,
+            provider=inp.provider,
+        )
+
+        if not generated or not generated[0]:
+            return DialogueAnalysisResponse(dialogues=[], statistics={})
+
+        response_text = generated[0].strip()
+
+        # Extract JSON from markdown code blocks
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+
+        data = json.loads(response_text)
+        dialogues = [ExtractedDialogue(**d) for d in data.get("dialogues", [])]
+        statistics = data.get("statistics", {})
+
+        logger.info(f"Extracted {len(dialogues)} dialogues")
+        return DialogueAnalysisResponse(dialogues=dialogues, statistics=statistics)
+
+    except Exception as e:
+        logger.error(f"Error analyzing dialogues: {e}")
+        return DialogueAnalysisResponse(dialogues=[], statistics={})
+
+
+class SpellCheckIssue(BaseModel):
+    type: str  # spelling, grammar, punctuation, style
+    original: str
+    suggestion: str
+    position: int = 0
+    description: str = ""
+
+
+class SpellCheckResponse(BaseModel):
+    issues: List[SpellCheckIssue]
+    summary: dict = {}
+
+
+@app.post("/gen/episode/spell-check", response_model=SpellCheckResponse)
+async def spell_check(inp: EpisodeAnalysisInput) -> SpellCheckResponse:
+    """Check spelling and grammar in the episode script."""
+    logger.info(f"Spell checking: length={len(inp.scriptText)} chars, provider={inp.provider}")
+
+    try:
+        system_prompt = """
+당신은 맞춤법 및 문법 검사 전문가입니다. 제공된 텍스트의 맞춤법, 문법, 띄어쓰기, 문체 오류를 찾아주세요.
+
+각 오류에 대해:
+1. 오류 타입 (spelling/grammar/punctuation/style)
+2. 원본 텍스트
+3. 수정 제안
+4. 위치 (대략적인 문자 위치)
+5. 설명
+
+추가로 요약 정보도 제공하세요:
+- 총 오류 수
+- 타입별 오류 수
+- 전반적인 평가
+
+JSON 형식으로 응답하세요:
+{
+  "issues": [
+    {
+      "type": "spelling",
+      "original": "잘못된 표현",
+      "suggestion": "올바른 표현",
+      "position": 100,
+      "description": "설명"
+    }
+  ],
+  "summary": {
+    "totalIssues": 5,
+    "byType": {"spelling": 2, "grammar": 3},
+    "overallScore": 85
+  }
+}
+"""
+
+        format_hint = f"형식: {inp.scriptFormat}" if inp.scriptFormat else ""
+        user_prompt = f"""
+{format_hint}
+다음 텍스트의 맞춤법과 문법을 검사해주세요:
+
+{inp.scriptText}
+
+JSON 형식으로만 응답하세요.
+"""
+
+        generated = llm_service.generate_dialogue(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=2000,
+            temperature=0.2,
+            n_candidates=1,
+            provider=inp.provider,
+        )
+
+        if not generated or not generated[0]:
+            return SpellCheckResponse(issues=[], summary={})
+
+        response_text = generated[0].strip()
+
+        # Extract JSON from markdown code blocks
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+
+        data = json.loads(response_text)
+        issues = [SpellCheckIssue(**i) for i in data.get("issues", [])]
+        summary = data.get("summary", {})
+
+        logger.info(f"Found {len(issues)} spelling/grammar issues")
+        return SpellCheckResponse(issues=issues, summary=summary)
+
+    except Exception as e:
+        logger.error(f"Error checking spelling: {e}")
+        return SpellCheckResponse(issues=[], summary={})
+
+
+# ============================================================
 # Task 92: 스트리밍 응답 엔드포인트
 # ============================================================
 
