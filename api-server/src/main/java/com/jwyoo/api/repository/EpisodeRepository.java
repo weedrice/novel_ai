@@ -15,6 +15,7 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
 
     // 프로젝트별 조회
     List<Episode> findByProjectOrderByEpisodeOrderAsc(Project project);
+    List<Episode> findByProjectOrderByCreatedAtDesc(Project project); // 생성일 기준 최신순
     Optional<Episode> findByIdAndProject(Long id, Project project);
 
     /**

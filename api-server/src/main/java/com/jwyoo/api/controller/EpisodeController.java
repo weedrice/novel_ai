@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import org.springframework.http.HttpStatus;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,12 +32,20 @@ public class EpisodeController {
     @GetMapping
     public List<Map<String, Object>> getEpisodes() {
         return episodeService.getAllEpisodes().stream()
-            .map(episode -> Map.of(
-                "id", (Object) episode.getId(),
-                "title", episode.getTitle(),
-                "description", episode.getDescription() != null ? episode.getDescription() : "",
-                "order", episode.getEpisodeOrder()
-            ))
+            .map(episode -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", episode.getId());
+                map.put("title", episode.getTitle());
+                map.put("description", episode.getDescription() != null ? episode.getDescription() : "");
+                map.put("episodeOrder", episode.getEpisodeOrder());
+                map.put("scriptText", episode.getScriptText());
+                map.put("scriptFormat", episode.getScriptFormat());
+                map.put("analysisStatus", episode.getAnalysisStatus());
+                map.put("llmProvider", episode.getLlmProvider());
+                map.put("createdAt", episode.getCreatedAt());
+                map.put("updatedAt", episode.getUpdatedAt());
+                return map;
+            })
             .collect(Collectors.toList());
     }
 

@@ -53,7 +53,7 @@ public class EpisodeService {
     public List<Episode> getAllEpisodes() {
         Project currentProject = projectService.getCurrentProject();
         log.debug("Fetching all episodes for project: {} (from DB, not cache)", currentProject.getId());
-        List<Episode> episodes = episodeRepository.findByProjectOrderByEpisodeOrderAsc(currentProject);
+        List<Episode> episodes = episodeRepository.findByProjectOrderByCreatedAtDesc(currentProject); // 생성일 기준 최신순
         log.info("Fetched {} episodes", episodes.size());
         return episodes;
     }
