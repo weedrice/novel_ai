@@ -18,6 +18,7 @@ export default function Navbar() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
   const [creating, setCreating] = useState(false);
@@ -90,17 +91,46 @@ export default function Navbar() {
 
               {/* Desktop only - 사용자 정보 */}
               {user ? (
-                <>
-                  <span className="hidden md:inline text-sm text-gray-600 dark:text-gray-300">
-                    {user.username}
-                  </span>
+                <div className="hidden sm:block relative">
                   <button
-                    onClick={logout}
-                    className="hidden sm:block px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                    className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    로그아웃
+                    <span>{user.username}</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </button>
-                </>
+
+                  {/* User Dropdown Menu */}
+                  {showUserDropdown && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                      <Link
+                        href="/profile"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        사용자 정보 수정
+                      </Link>
+                      <Link
+                        href="/settings"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        설정
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          logout();
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        로그아웃
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <Link
                   href="/login"
@@ -163,17 +193,31 @@ export default function Navbar() {
                     </button>
                   </div>
 
-                  {/* 사용자 정보 - Mobile */}
-                  <div className="mb-3 px-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  {/* 사용자 메뉴 - Mobile */}
+                  <div className="mb-3 px-2 space-y-2">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
                       {user.username}
                     </p>
+                    <Link
+                      href="/profile"
+                      onClick={() => setShowMobileMenu(false)}
+                      className="block w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    >
+                      사용자 정보 수정
+                    </Link>
+                    <Link
+                      href="/settings"
+                      onClick={() => setShowMobileMenu(false)}
+                      className="block w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    >
+                      설정
+                    </Link>
                     <button
                       onClick={() => {
                         setShowMobileMenu(false);
                         logout();
                       }}
-                      className="w-full px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700"
+                      className="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                     >
                       로그아웃
                     </button>
