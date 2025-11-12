@@ -96,6 +96,7 @@ export default function ProfilePage() {
       await apiClient.put('/users/me/password', {
         currentPassword,
         newPassword,
+        confirmNewPassword: confirmPassword,
       })
       setSuccess('비밀번호가 변경되었습니다.')
       setCurrentPassword('')
