@@ -152,16 +152,6 @@ export default function Home() {
                 </Button>
               </Link>
             </div>
-
-            {/* Demo Link */}
-            <div className="mt-8">
-              <p className="text-gray-600 dark:text-gray-400">
-                먼저 살펴보고 싶으신가요?{' '}
-                <Link href="/graph" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">
-                  데모 모드로 둘러보기
-                </Link>
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -180,7 +170,7 @@ export default function Home() {
                 내 프로젝트
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                안녕하세요, <span className="font-semibold text-indigo-600 dark:text-indigo-400">{user.username}</span>님!
+                안녕하세요, <span className="font-semibold text-indigo-600 dark:text-indigo-400">{user.name || user.username}</span>님!
               </p>
             </div>
             <Button

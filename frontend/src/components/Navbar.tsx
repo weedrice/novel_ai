@@ -96,7 +96,7 @@ export default function Navbar() {
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
                     className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <span>{user.username}</span>
+                    <span>{user.name || user.username}</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -196,7 +196,7 @@ export default function Navbar() {
                   {/* 사용자 메뉴 - Mobile */}
                   <div className="mb-3 px-2 space-y-2">
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                      {user.username}
+                      {user.name || user.username}
                     </p>
                     <Link
                       href="/profile"

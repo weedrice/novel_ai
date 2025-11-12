@@ -3,6 +3,7 @@ import apiClient from './api';
 export interface User {
   id: number;
   username: string;
+  name?: string; // 사용자 실명 (선택)
   email: string;
   role: string;
 }
