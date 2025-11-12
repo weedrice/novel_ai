@@ -15,6 +15,11 @@ interface Project {
   id: number
   name: string
   description: string
+  owner?: {
+    id: number
+    username: string
+    email: string
+  }
   createdAt: string
   updatedAt: string
 }
@@ -206,6 +211,12 @@ export default function ProjectSettingsPage() {
                 <span className="text-gray-600 dark:text-gray-400">프로젝트 ID</span>
                 <span className="text-gray-900 dark:text-white font-mono">#{project.id}</span>
               </div>
+              {project.owner && (
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-400">소유자</span>
+                  <span className="text-gray-900 dark:text-white font-medium">{project.owner.username}</span>
+                </div>
+              )}
               <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                 <span className="text-gray-600 dark:text-gray-400">생성일</span>
                 <span className="text-gray-900 dark:text-white">

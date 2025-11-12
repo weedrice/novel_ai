@@ -1,6 +1,7 @@
 package com.jwyoo.api.controller;
 
 import com.jwyoo.api.dto.ProjectRequest;
+import com.jwyoo.api.dto.ProjectResponse;
 import com.jwyoo.api.entity.Project;
 import com.jwyoo.api.service.ProjectService;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 프로젝트 관리 REST API 컨트롤러
@@ -26,13 +28,34 @@ public class ProjectController {
     private final ProjectService projectService;
 
     /**
+     * Project 엔티티를 ProjectResponse DTO로 변환
+     */
+    private ProjectResponse toProjectResponse(Project project) {
+        return ProjectResponse.builder()
+                .id(project.getId())
+                .name(project.getName())
+                .description(project.getDescription())
+                .owner(ProjectResponse.OwnerInfo.builder()
+                        .id(project.getOwner().getId())
+                        .username(project.getOwner().getUsername())
+                        .email(project.getOwner().getEmail())
+                        .build())
+                .createdAt(project.getCreatedAt())
+                .updatedAt(project.getUpdatedAt())
+                .build();
+    }
+
+    /**
      * 내 프로젝트 목록 조회
      */
     @GetMapping
-    public ResponseEntity<List<Project>> getMyProjects() {
+    public ResponseEntity<List<ProjectResponse>> getMyProjects() {
         log.info("GET /projects - Fetching my projects");
         List<Project> projects = projectService.getMyProjects();
-        return ResponseEntity.ok(projects);
+        List<ProjectResponse> responses = projects.stream()
+                .map(this::toProjectResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     /**
@@ -44,7 +67,8 @@ public class ProjectController {
 
         try {
             Project project = projectService.createProject(request.getName(), request.getDescription());
-            return ResponseEntity.status(HttpStatus.CREATED).body(project);
+            ProjectResponse response = toProjectResponse(project);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             log.error("Failed to create project: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -60,7 +84,8 @@ public class ProjectController {
 
         try {
             Project project = projectService.getProject(id);
-            return ResponseEntity.ok(project);
+            ProjectResponse response = toProjectResponse(project);
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             log.error("Failed to fetch project: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
@@ -79,7 +104,8 @@ public class ProjectController {
 
         try {
             Project project = projectService.updateProject(id, request.getName(), request.getDescription());
-            return ResponseEntity.ok(project);
+            ProjectResponse response = toProjectResponse(project);
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             log.error("Failed to update project: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
@@ -106,9 +132,12 @@ public class ProjectController {
      * 프로젝트 검색
      */
     @GetMapping("/search")
-    public ResponseEntity<List<Project>> searchProjects(@RequestParam String keyword) {
+    public ResponseEntity<List<ProjectResponse>> searchProjects(@RequestParam String keyword) {
         log.info("GET /projects/search?keyword={}", keyword);
         List<Project> projects = projectService.searchProjects(keyword);
-        return ResponseEntity.ok(projects);
+        List<ProjectResponse> responses = projects.stream()
+                .map(this::toProjectResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 }

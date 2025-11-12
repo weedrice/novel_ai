@@ -242,7 +242,7 @@ export default function Home() {
                   </div>
 
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                       <span>생성일: {new Date(project.createdAt).toLocaleDateString()}</span>
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,6 +250,11 @@ export default function Home() {
                         </svg>
                       </span>
                     </div>
+                    {project.owner && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        소유자: <span className="font-medium">{project.owner.username}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
