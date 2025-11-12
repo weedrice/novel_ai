@@ -90,9 +90,19 @@ public class UserController {
         try {
             User user = userService.findByUsername(username);
 
+            // 새 비밀번호와 확인 비밀번호 일치 여부 검사
+            if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "새 비밀번호가 일치하지 않습니다"));
+            }
+
             // 현재 비밀번호 확인
             if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
                 return ResponseEntity.badRequest().body(Map.of("error", "현재 비밀번호가 일치하지 않습니다"));
+            }
+
+            // 현재 비밀번호와 새 비밀번호가 같은지 검사
+            if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "새 비밀번호는 현재 비밀번호와 달라야 합니다"));
             }
 
             // 비밀번호 변경
@@ -131,5 +141,8 @@ public class UserController {
 
         @Size(min = 6, max = 100, message = "새 비밀번호는 6-100자 사이여야 합니다")
         private String newPassword;
+
+        @Size(min = 6, max = 100, message = "새 비밀번호 확인은 6-100자 사이여야 합니다")
+        private String confirmNewPassword;
     }
 }
