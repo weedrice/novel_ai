@@ -40,7 +40,7 @@ public class AuthController {
      * 회원가입
      *
      * @param request 회원가입 요청 DTO
-     * @return 생성된 사용자 정보
+     * @return 생성된 사용자 정보 및 JWT 토큰
      */
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest request) {
@@ -49,11 +49,32 @@ public class AuthController {
         try {
             User user = userService.registerUser(request);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "message", "회원가입이 완료되었습니다",
-                    "username", user.getUsername(),
-                    "email", user.getEmail()
-            ));
+            // Access Token 및 Refresh Token 생성
+            String accessToken = jwtTokenProvider.generateAccessToken(user.getUsername());
+            String refreshToken = refreshTokenService.createRefreshToken(user.getUsername());
+
+            // UserDTO 생성
+            LoginResponse.UserDTO userDTO = LoginResponse.UserDTO.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .name(user.getName())
+                    .email(user.getEmail())
+                    .role(user.getRole().name())
+                    .build();
+
+            // 응답 생성
+            LoginResponse response = LoginResponse.builder()
+                    .token(accessToken)
+                    .refreshToken(refreshToken)
+                    .type("Bearer")
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .user(userDTO)
+                    .build();
+
+            log.info("Signup successful for user: {} (Access Token + Refresh Token issued)", user.getUsername());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
         } catch (RuntimeException e) {
             log.error("Signup failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
@@ -92,6 +113,7 @@ public class AuthController {
             LoginResponse.UserDTO userDTO = LoginResponse.UserDTO.builder()
                     .id(user.getId())
                     .username(user.getUsername())
+                    .name(user.getName())
                     .email(user.getEmail())
                     .role(user.getRole().name())
                     .build();

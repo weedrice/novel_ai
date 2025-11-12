@@ -36,6 +36,7 @@ public class LoginResponse {
     public static class UserDTO {
         private Long id;
         private String username;
+        private String name; // 사용자 실명 (선택)
         private String email;
         private String role;
     }
