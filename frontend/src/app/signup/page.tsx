@@ -8,6 +8,7 @@ import { signup, saveAuthData } from '@/lib/auth';
 export default function SignupPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,7 +34,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const response = await signup({ username, email, password });
+      const response = await signup({ username, name: name.trim() || undefined, email, password });
       saveAuthData(response.token, response.user, response.refreshToken);
 
       // 회원가입 성공 시 홈으로 이동
@@ -68,7 +69,7 @@ export default function SignupPage() {
             {/* 사용자명 입력 */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                사용자명
+                사용자명 *
               </label>
               <input
                 id="username"
@@ -85,10 +86,28 @@ export default function SignupPage() {
               />
             </div>
 
+            {/* 이름 입력 */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                이름 (선택)
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                maxLength={100}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="실명 또는 닉네임 (선택)"
+                disabled={loading}
+              />
+            </div>
+
             {/* 이메일 입력 */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                이메일
+                이메일 *
               </label>
               <input
                 id="email"
@@ -106,7 +125,7 @@ export default function SignupPage() {
             {/* 비밀번호 입력 */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                비밀번호
+                비밀번호 *
               </label>
               <input
                 id="password"
@@ -125,7 +144,7 @@ export default function SignupPage() {
             {/* 비밀번호 확인 입력 */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                비밀번호 확인
+                비밀번호 확인 *
               </label>
               <input
                 id="confirmPassword"

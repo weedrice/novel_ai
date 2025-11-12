@@ -15,6 +15,7 @@ export interface LoginResponse {
 
 export interface SignupRequest {
   username: string;
+  name?: string; // 사용자 실명 (선택)
   email: string;
   password: string;
 }
