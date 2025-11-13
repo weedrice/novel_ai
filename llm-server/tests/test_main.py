@@ -1,16 +1,25 @@
+"""
+Main application tests
+리팩토링된 구조에 맞춘 통합 테스트
+"""
+
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app, _generate_fallback_response, SuggestInput, _generate_empty_analysis
+from app.main import app
 
 client = TestClient(app)
 
+
+# ============================================================
+# System Endpoints
+# ============================================================
 
 def test_root_endpoint():
     """Test root endpoint returns server info"""
     response = client.get("/")
     assert response.status_code == 200
     assert response.json()["message"] == "Character Tone LLM Server is running"
-    assert response.json()["version"] == "0.2.0"
+    assert response.json()["version"] == "0.3.0"
 
 
 def test_health_endpoint():
@@ -32,6 +41,10 @@ def test_providers_endpoint():
     assert "claude" in data["providers"]
     assert "gemini" in data["providers"]
 
+
+# ============================================================
+# Dialogue Endpoints
+# ============================================================
 
 def test_suggest_endpoint_with_fallback():
     """Test dialogue suggestion endpoint with fallback (no character info)"""
@@ -69,7 +82,7 @@ def test_suggest_endpoint_with_character_info():
             "toneKeywords": "gentle"
         },
         "targetNames": ["Bob"],
-        "provider": "openai"
+        "provider": "gemini"
     }
     response = client.post("/gen/suggest", json=payload)
     assert response.status_code == 200
@@ -78,6 +91,26 @@ def test_suggest_endpoint_with_character_info():
     # May use fallback if LLM not available
     assert len(data["candidates"]) >= 0
 
+
+def test_suggest_with_max_length():
+    """Test that suggestions respect max length"""
+    payload = {
+        "speakerId": "test",
+        "targetIds": ["target"],
+        "intent": "greet",
+        "honorific": "banmal",
+        "maxLen": 20,
+        "nCandidates": 3
+    }
+    response = client.post("/gen/suggest", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert all(len(c["text"]) <= 20 for c in data["candidates"])
+
+
+# ============================================================
+# Scenario Endpoints
+# ============================================================
 
 def test_scenario_endpoint():
     """Test scenario generation endpoint"""
@@ -100,7 +133,7 @@ def test_scenario_endpoint():
             }
         ],
         "dialogueCount": 5,
-        "provider": "openai"
+        "provider": "gemini"
     }
     response = client.post("/gen/scenario", json=payload)
     assert response.status_code == 200
@@ -109,12 +142,16 @@ def test_scenario_endpoint():
     assert len(data["dialogues"]) <= payload["dialogueCount"]
 
 
+# ============================================================
+# Script Analysis Endpoints
+# ============================================================
+
 def test_analyze_script_endpoint():
     """Test script analysis endpoint"""
     payload = {
         "content": "Alice: Hello Bob! How are you?\nBob: I'm doing well, thanks Alice.",
         "formatHint": "scenario",
-        "provider": "openai"
+        "provider": "gemini"
     }
     response = client.post("/gen/analyze-script", json=payload)
     assert response.status_code == 200
@@ -125,69 +162,102 @@ def test_analyze_script_endpoint():
     assert "relationships" in data
 
 
-def test_fallback_response_generation():
-    """Test fallback response generation for different intents"""
-    intents = ["reconcile", "argue", "comfort", "greet", "thank"]
+# ============================================================
+# Episode Analysis Endpoints
+# ============================================================
 
-    for intent in intents:
-        inp = SuggestInput(
-            speakerId="test",
-            targetIds=["target"],
-            intent=intent,
-            honorific="banmal",
-            nCandidates=3
-        )
-        response = _generate_fallback_response(inp)
-        assert len(response.candidates) > 0
-        assert all(c.score <= 1.0 and c.score >= 0.0 for c in response.candidates)
-
-
-def test_fallback_response_with_jondae():
-    """Test fallback response with formal speech level"""
-    inp = SuggestInput(
-        speakerId="test",
-        targetIds=["target"],
-        intent="greet",
-        honorific="jondae",
-        nCandidates=2
-    )
-    response = _generate_fallback_response(inp)
-    assert len(response.candidates) > 0
-    # Check that responses are more polite
-    assert any("please" in c.text.lower() for c in response.candidates)
+def test_episode_summary_endpoint():
+    """Test episode summary generation"""
+    payload = {
+        "scriptText": "This is a test script about a character going on an adventure.",
+        "scriptFormat": "novel",
+        "provider": "gemini"
+    }
+    response = client.post("/gen/episode/summary", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "summary" in data
+    assert "keyPoints" in data
+    assert "wordCount" in data
 
 
-def test_fallback_response_unknown_intent():
-    """Test fallback response with unknown intent"""
-    inp = SuggestInput(
-        speakerId="test",
-        targetIds=["target"],
-        intent="unknown_intent",
-        honorific="banmal",
-        nCandidates=3
-    )
-    response = _generate_fallback_response(inp)
-    assert len(response.candidates) > 0
+def test_episode_characters_endpoint():
+    """Test episode character analysis"""
+    payload = {
+        "scriptText": "Alice walked into the room. Bob was sitting by the window.",
+        "scriptFormat": "novel",
+        "provider": "gemini"
+    }
+    response = client.post("/gen/episode/characters", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "characters" in data
 
 
-def test_empty_analysis_generation():
-    """Test empty analysis generation"""
-    response = _generate_empty_analysis()
-    assert len(response.characters) == 0
-    assert len(response.dialogues) == 0
-    assert len(response.scenes) == 0
-    assert len(response.relationships) == 0
+def test_episode_scenes_endpoint():
+    """Test episode scene analysis"""
+    payload = {
+        "scriptText": "Scene 1: Morning at the park. Scene 2: Afternoon at the cafe.",
+        "scriptFormat": "novel",
+        "provider": "gemini"
+    }
+    response = client.post("/gen/episode/scenes", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "scenes" in data
 
 
-def test_suggest_with_max_length_truncation():
-    """Test that suggestions are truncated to max length"""
-    inp = SuggestInput(
-        speakerId="test",
-        targetIds=["target"],
-        intent="greet",
-        honorific="banmal",
-        maxLen=10,  # Very short max length
-        nCandidates=3
-    )
-    response = _generate_fallback_response(inp)
-    assert all(len(c.text) <= 10 for c in response.candidates)
+def test_episode_dialogues_endpoint():
+    """Test episode dialogue analysis"""
+    payload = {
+        "scriptText": '"Hello," said Alice. "Hi there," Bob replied.',
+        "scriptFormat": "novel",
+        "provider": "gemini"
+    }
+    response = client.post("/gen/episode/dialogues", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "dialogues" in data
+    assert "statistics" in data
+
+
+def test_episode_spell_check_endpoint():
+    """Test episode spell check"""
+    payload = {
+        "scriptText": "This is a test text for spell checking.",
+        "scriptFormat": "novel",
+        "provider": "gemini"
+    }
+    response = client.post("/gen/episode/spell-check", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "issues" in data
+    assert "summary" in data
+
+
+# ============================================================
+# Error Handling
+# ============================================================
+
+def test_suggest_endpoint_missing_required_fields():
+    """Test suggestion endpoint with missing required fields"""
+    payload = {
+        "intent": "greet"
+        # Missing speakerId, targetIds, honorific
+    }
+    response = client.post("/gen/suggest", json=payload)
+    assert response.status_code == 422  # Validation error
+
+
+def test_scenario_endpoint_invalid_dialogue_count():
+    """Test scenario endpoint with invalid dialogue count"""
+    payload = {
+        "sceneDescription": "Test scene",
+        "participants": [
+            {"characterId": "char1", "name": "Alice"}
+        ],
+        "dialogueCount": 100,  # Exceeds max limit
+        "provider": "gemini"
+    }
+    response = client.post("/gen/scenario", json=payload)
+    assert response.status_code == 422  # Validation error
