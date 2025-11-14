@@ -4,6 +4,7 @@
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+from slowapi import Limiter
 import logging
 import json
 
@@ -16,8 +17,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/gen", tags=["streaming"])
 
 
-def create_streaming_router(llm_manager: LLMProviderManager) -> APIRouter:
+def create_streaming_router(llm_manager: LLMProviderManager, limiter: Limiter = None) -> APIRouter:
     """스트리밍 라우터 생성"""
+
+    # Rate limiting: 분당 10회 요청 제한 (스트리밍은 리소스 집약적)
+    rate_limit = "10/minute" if limiter else None
 
     @router.post("/suggest-stream")
     async def gen_suggest_stream(request: Request, inp: SuggestInput = None):
@@ -25,6 +29,9 @@ def create_streaming_router(llm_manager: LLMProviderManager) -> APIRouter:
         스트리밍 방식으로 대사 제안 생성
         Server-Sent Events (SSE) 형식으로 실시간 응답 전송
         """
+        if limiter:
+            await limiter.check_request(request, rate_limit)
+
         logger.info(
             f"Generating streaming dialogue for speaker={inp.speakerId}, "
             f"intent={inp.intent}, provider={inp.provider or llm_manager.default_provider}"
