@@ -6,6 +6,7 @@ Controller-Service 구조로 리팩토링된 FastAPI 애플리케이션
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 import logging
 import os
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -38,11 +39,31 @@ logger = logging.getLogger(__name__)
 # Rate Limiter 설정
 limiter = Limiter(key_func=get_remote_address)
 
-# Create FastAPI app
+
+# ============================================================
+# Lifespan Context Manager
+# ============================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """애플리케이션 생명주기 관리"""
+    # Startup
+    logger.info("=" * 60)
+    logger.info("LLM Server Starting...")
+    logger.info("=" * 60)
+
+    yield  # 애플리케이션 실행
+
+    # Shutdown
+    logger.info("LLM Server Shutting Down...")
+
+
+# Create FastAPI app with lifespan
 app = FastAPI(
     title="Character Tone LLM Server",
     description="AI-powered dialogue tone suggestion and script analysis service",
     version="0.3.0",
+    lifespan=lifespan,
 )
 
 # Rate Limiter를 FastAPI 앱에 연결
@@ -80,6 +101,8 @@ else:
 
 logger.info("Initializing LLM Provider Manager...")
 llm_manager = LLMProviderManager()
+logger.info(f"Available Providers: {llm_manager.get_available_providers()}")
+logger.info(f"Default Provider: {llm_manager.default_provider}")
 
 logger.info("Initializing Services...")
 dialogue_service = DialogueService(llm_manager)
@@ -106,26 +129,6 @@ app.include_router(scenario_router)
 app.include_router(script_analysis_router)
 app.include_router(episode_analysis_router)
 app.include_router(streaming_router)
-
-
-# ============================================================
-# Startup Event
-# ============================================================
-
-@app.on_event("startup")
-async def startup_event():
-    """애플리케이션 시작 시 실행"""
-    logger.info("=" * 60)
-    logger.info("LLM Server Starting...")
-    logger.info(f"Available Providers: {llm_manager.get_available_providers()}")
-    logger.info(f"Default Provider: {llm_manager.default_provider}")
-    logger.info("=" * 60)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """애플리케이션 종료 시 실행"""
-    logger.info("LLM Server Shutting Down...")
 
 
 # ============================================================
