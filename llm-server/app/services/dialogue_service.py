@@ -9,6 +9,7 @@ from typing import List
 from app.core.llm_provider_manager import LLMProviderManager
 from app.services.prompt_builder import PromptBuilder
 from app.models.dialogue_models import SuggestInput, Candidate, SuggestResponse
+from app.utils.error_handlers import with_llm_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ class DialogueService:
     def __init__(self, llm_manager: LLMProviderManager):
         self.llm_manager = llm_manager
 
+    @with_llm_fallback(fallback_func=lambda self, inp: self._generate_fallback_response(inp))
     def generate_dialogue_suggestions(self, inp: SuggestInput) -> SuggestResponse:
         """
         대사 제안 생성
@@ -38,55 +40,50 @@ class DialogueService:
             logger.warning("No character info provided, using fallback templates")
             return self._generate_fallback_response(inp)
 
-        try:
-            character_dict = inp.characterInfo.model_dump()
-            target_names = inp.targetNames or inp.targetIds
+        character_dict = inp.characterInfo.model_dump()
+        target_names = inp.targetNames or inp.targetIds
 
-            # 프롬프트 빌드
-            system_prompt, user_prompt = PromptBuilder.build_full_prompt(
-                character_info=character_dict,
-                intent=inp.intent,
-                honorific=inp.honorific,
-                target_names=target_names,
-                max_len=inp.maxLen,
-                n_candidates=inp.nCandidates,
-                context=inp.context,
-            )
+        # 프롬프트 빌드
+        system_prompt, user_prompt = PromptBuilder.build_full_prompt(
+            character_info=character_dict,
+            intent=inp.intent,
+            honorific=inp.honorific,
+            target_names=target_names,
+            max_len=inp.maxLen,
+            n_candidates=inp.nCandidates,
+            context=inp.context,
+        )
 
-            logger.info(
-                f"Prompt sizes: system={len(system_prompt)} chars, user={len(user_prompt)} chars"
-            )
+        logger.info(
+            f"Prompt sizes: system={len(system_prompt)} chars, user={len(user_prompt)} chars"
+        )
 
-            # LLM 호출
-            generated_text = self.llm_manager.generate(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                n_candidates=inp.nCandidates,
-                provider=inp.provider,
-            )
+        # LLM 호출
+        generated_text = self.llm_manager.generate(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            n_candidates=inp.nCandidates,
+            provider=inp.provider,
+        )
 
-            # 대사 파싱
-            dialogues = self._parse_dialogues(generated_text, inp.nCandidates)
+        # 대사 파싱
+        dialogues = self._parse_dialogues(generated_text, inp.nCandidates)
 
-            logger.info(f"Generated {len(dialogues)} dialogues")
+        logger.info(f"Generated {len(dialogues)} dialogues")
 
-            # Candidate 객체 생성
-            candidates: List[Candidate] = []
-            for i, text in enumerate(dialogues):
-                if len(text) > inp.maxLen:
-                    text = text[: inp.maxLen - 3] + "..."
-                score = max(0.0, min(1.0, 0.95 - (i * 0.05)))
-                candidates.append(Candidate(text=text, score=round(score, 2)))
+        # Candidate 객체 생성
+        candidates: List[Candidate] = []
+        for i, text in enumerate(dialogues):
+            if len(text) > inp.maxLen:
+                text = text[: inp.maxLen - 3] + "..."
+            score = max(0.0, min(1.0, 0.95 - (i * 0.05)))
+            candidates.append(Candidate(text=text, score=round(score, 2)))
 
-            if not candidates:
-                logger.warning("No candidates generated, using fallback")
-                return self._generate_fallback_response(inp)
-
-            return SuggestResponse(candidates=candidates)
-
-        except Exception as e:
-            logger.error(f"Error generating dialogue: {e}")
+        if not candidates:
+            logger.warning("No candidates generated, using fallback")
             return self._generate_fallback_response(inp)
+
+        return SuggestResponse(candidates=candidates)
 
     def _parse_dialogues(self, content: str, n_candidates: int) -> List[str]:
         """

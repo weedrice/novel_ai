@@ -7,6 +7,7 @@ import logging
 from typing import List
 from app.core.llm_provider_manager import LLMProviderManager
 from app.utils.prompt_templates import PromptTemplates
+from app.utils.error_handlers import with_llm_fallback
 from app.models.scenario_models import (
     ScenarioInput,
     ScenarioResponse,
@@ -23,6 +24,9 @@ class ScenarioService:
     def __init__(self, llm_manager: LLMProviderManager):
         self.llm_manager = llm_manager
 
+    @with_llm_fallback(fallback_func=lambda self, inp: ScenarioResponse(
+        dialogues=self._generate_fallback_scenario(inp)[:inp.dialogueCount]
+    ))
     def generate_scenario(self, inp: ScenarioInput) -> ScenarioResponse:
         """
         시나리오 생성
@@ -38,49 +42,43 @@ class ScenarioService:
             f"{inp.dialogueCount} lines"
         )
 
-        try:
-            # 참여자 정보 문자열 생성
-            participants_desc = "\n".join([
-                f"- {p.name} ({p.characterId}): {p.personality}, style: {p.speakingStyle}"
-                for p in inp.participants
-            ])
+        # 참여자 정보 문자열 생성
+        participants_desc = "\n".join([
+            f"- {p.name} ({p.characterId}): {p.personality}, style: {p.speakingStyle}"
+            for p in inp.participants
+        ])
 
-            # 프롬프트 생성
-            system_prompt = PromptTemplates.scenario_system_prompt(
-                inp.sceneDescription,
-                inp.location,
-                inp.mood,
-                participants_desc
-            )
-            user_prompt = PromptTemplates.scenario_user_prompt(inp.dialogueCount)
+        # 프롬프트 생성
+        system_prompt = PromptTemplates.scenario_system_prompt(
+            inp.sceneDescription,
+            inp.location,
+            inp.mood,
+            participants_desc
+        )
+        user_prompt = PromptTemplates.scenario_user_prompt(inp.dialogueCount)
 
-            logger.info(
-                f"Scenario prompts: system={len(system_prompt)} chars, "
-                f"user={len(user_prompt)} chars"
-            )
+        logger.info(
+            f"Scenario prompts: system={len(system_prompt)} chars, "
+            f"user={len(user_prompt)} chars"
+        )
 
-            # LLM 호출
-            generated_text = self.llm_manager.generate(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                max_tokens=500,
-                temperature=0.8,
-                provider=inp.provider,
-            )
+        # LLM 호출
+        generated_text = self.llm_manager.generate(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=500,
+            temperature=0.8,
+            provider=inp.provider,
+        )
 
-            # 대화 파싱
-            dialogues = self._parse_scenario_dialogues(generated_text, inp.participants)
+        # 대화 파싱
+        dialogues = self._parse_scenario_dialogues(generated_text, inp.participants)
 
-            if not dialogues:
-                logger.warning("No dialogues generated, using fallback scenario")
-                dialogues = self._generate_fallback_scenario(inp)
-
-            return ScenarioResponse(dialogues=dialogues[: inp.dialogueCount])
-
-        except Exception as e:
-            logger.error(f"Error generating scenario: {e}")
+        if not dialogues:
+            logger.warning("No dialogues generated, using fallback scenario")
             dialogues = self._generate_fallback_scenario(inp)
-            return ScenarioResponse(dialogues=dialogues[: inp.dialogueCount])
+
+        return ScenarioResponse(dialogues=dialogues[: inp.dialogueCount])
 
     def _parse_scenario_dialogues(
         self,

@@ -7,6 +7,7 @@ import logging
 from app.core.llm_provider_manager import LLMProviderManager
 from app.utils.json_parser import JSONParser
 from app.utils.prompt_templates import PromptTemplates
+from app.utils.error_handlers import with_error_handling
 from app.models.episode_analysis_models import (
     EpisodeAnalysisInput,
     SummaryResponse,
