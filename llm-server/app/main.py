@@ -7,8 +7,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import logging
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.core.llm_provider_manager import LLMProviderManager
+from app.core.rate_limiter import limiter
 from app.services.dialogue_service import DialogueService
 from app.services.scenario_service import ScenarioService
 from app.services.script_analysis_service import ScriptAnalysisService
@@ -36,6 +39,10 @@ app = FastAPI(
     description="AI-powered dialogue tone suggestion and script analysis service",
     version="0.3.0",
 )
+
+# Rate Limiter 설정
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware
 app.add_middleware(

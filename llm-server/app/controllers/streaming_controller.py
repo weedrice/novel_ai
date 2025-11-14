@@ -10,6 +10,7 @@ import json
 from app.core.llm_provider_manager import LLMProviderManager
 from app.services.prompt_builder import PromptBuilder
 from app.models.dialogue_models import SuggestInput
+from app.core.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ def create_streaming_router(llm_manager: LLMProviderManager) -> APIRouter:
     """스트리밍 라우터 생성"""
 
     @router.post("/suggest-stream")
+    @limiter.limit("10/minute")  # 분당 10회 요청 제한 (스트리밍은 리소스 집약적)
     async def gen_suggest_stream(request: Request, inp: SuggestInput = None):
         """
         스트리밍 방식으로 대사 제안 생성

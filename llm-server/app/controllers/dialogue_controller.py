@@ -6,6 +6,7 @@ from fastapi import APIRouter, Request
 import logging
 from app.services.dialogue_service import DialogueService
 from app.models.dialogue_models import SuggestInput, SuggestResponse
+from app.core.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ def create_dialogue_router(dialogue_service: DialogueService) -> APIRouter:
     """대사 생성 라우터 생성"""
 
     @router.post("/suggest", response_model=SuggestResponse)
+    @limiter.limit("20/minute")  # 분당 20회 요청 제한
     async def gen_suggest(request: Request, inp: SuggestInput = None) -> SuggestResponse:
         """대사 제안 생성"""
         # Log raw request for debugging
