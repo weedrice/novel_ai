@@ -60,7 +60,9 @@
       "Bash(chmod:*)",
       "Bash(git restore:*)",
       "Bash(npx tsc:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ],
     "deny": [],
     "ask": []

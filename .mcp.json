@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "noviis": {
+      "type": "http",
+      "url": "https://noviis.kr/mcp"
+    }
+  }
+}
